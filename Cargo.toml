@@ -1,0 +1,8 @@
+[package]
+name = "spvc"
+version = "0.1.0"
+authors = ["John-John Tedro <udoprog@tedro.se>"]
+
+[dependencies]
+rspirv = "0.4"
+spirv_headers = "1.1"
