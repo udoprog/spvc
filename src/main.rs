@@ -1,11 +1,12 @@
 extern crate rspirv;
 extern crate spirv_headers as spirv;
-#[macro_use]
 extern crate spvc;
+#[macro_use]
+extern crate glsl_struct_derive;
+extern crate glsl_struct;
 
 use self::spvc::errors::*;
-use self::spvc::spirv_shader_base::SpirvShaderBase;
-use self::spvc::glsl_struct::GlslStructInfo;
+use self::spvc::spirv_shader_base::{SpirvShaderBase, StorageClass};
 
 use std::slice;
 use rspirv::binary::Assemble;
@@ -13,17 +14,22 @@ use rspirv::binary::Disassemble;
 use std::io::Write;
 use std::fs::File;
 
-glsl_struct!{Model {
-    model: mat4,
-    base_color_factor: vec4,
-    use_base_color_texture: bool,
-}}
+#[derive(GlslStruct)]
+pub struct OtherModel;
 
-glsl_struct!{Global {
-    camera: mat4,
-    view: mat4,
-    projection: mat4,
-}}
+#[derive(GlslStruct)]
+pub struct Model {
+    model: glsl_struct::Mat4,
+    base_color_factor: glsl_struct::Vec4,
+    use_base_color_texture: glsl_struct::Bool,
+}
+
+#[derive(GlslStruct)]
+pub struct Global {
+    camera: glsl_struct::Mat4,
+    view: glsl_struct::Mat4,
+    projection: glsl_struct::Mat4,
+}
 
 fn build_vertex_shader() -> Result<rspirv::mr::Module> {
     let mut shader = SpirvShaderBase::new();
@@ -34,11 +40,7 @@ fn build_vertex_shader() -> Result<rspirv::mr::Module> {
 
     let gl_per_vertex = shader.gl_per_vertex();
 
-    let ptr_output_gl_per_vertex = shader.builder.type_pointer(
-        None,
-        spirv::StorageClass::Output,
-        gl_per_vertex,
-    );
+    let ptr_output_gl_per_vertex = shader.type_pointer(StorageClass::Output, gl_per_vertex);
     let _output = shader.builder.variable(
         ptr_output_gl_per_vertex,
         None,
@@ -50,11 +52,7 @@ fn build_vertex_shader() -> Result<rspirv::mr::Module> {
     let global_type = shader.glsl_struct(Global::glsl_struct());
 
     let v2float = shader.builder.type_vector(float_, 2);
-    let ptr_output_v2float = shader.builder.type_pointer(
-        None,
-        spirv::StorageClass::Output,
-        v2float,
-    );
+    let ptr_output_v2float = shader.type_pointer(StorageClass::Output, v2float);
     let v_tex_coord = shader.builder.variable(
         ptr_output_v2float,
         None,
@@ -71,11 +69,7 @@ fn build_vertex_shader() -> Result<rspirv::mr::Module> {
         vec![rspirv::mr::Operand::LiteralInt32(0)],
     );
 
-    let ptr_input_v2float = shader.builder.type_pointer(
-        None,
-        spirv::StorageClass::Input,
-        v2float,
-    );
+    let ptr_input_v2float = shader.type_pointer(StorageClass::Input, v2float);
 
     let tex_coord = shader.builder.variable(
         ptr_input_v2float,
@@ -91,11 +85,7 @@ fn build_vertex_shader() -> Result<rspirv::mr::Module> {
         vec![rspirv::mr::Operand::LiteralInt32(1)],
     );
 
-    let ptr_uniform_global = shader.builder.type_pointer(
-        None,
-        spirv::StorageClass::Uniform,
-        global_type,
-    );
+    let ptr_uniform_global = shader.type_pointer(StorageClass::Uniform, global_type);
 
     let global = shader.builder.variable(
         ptr_uniform_global,

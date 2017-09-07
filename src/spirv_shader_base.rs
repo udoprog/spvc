@@ -2,7 +2,7 @@ use rspirv;
 use spirv_headers as spirv;
 use self::spirv::Word;
 use std::collections::HashMap;
-use super::glsl_struct::GlslStruct;
+use glsl_struct::GlslStruct;
 
 pub struct SpirvShaderBase {
     /// Internal builder
@@ -116,6 +116,22 @@ impl SpirvShaderBase {
         )
     }
 
+    pub fn type_pointer<W: Into<Word>>(
+        &mut self,
+        storage_class: StorageClass,
+        pointee_type: W,
+    ) -> Word {
+        let pointee_type = pointee_type.into();
+
+        self.cached_type(
+            SpirvType::Pointer {
+                storage_class: storage_class,
+                pointee_type: pointee_type,
+            },
+            |b| b.type_pointer(None, storage_class.into(), pointee_type),
+        )
+    }
+
     /// Build a struct that has been defined using the glsl_struct macro.
     pub fn glsl_struct(&mut self, type_info: GlslStruct) -> Word {
         let mut field_types = Vec::new();
@@ -153,7 +169,7 @@ impl SpirvShaderBase {
 
         let st = self.type_struct(field_types);
 
-        self.builder.name(st, type_info.name);
+        self.builder.name(st, type_info.name.to_string());
 
         let mut offset = 0u32;
 
@@ -162,7 +178,7 @@ impl SpirvShaderBase {
 
             let i = i as u32;
 
-            self.builder.member_name(st, i as u32, m.name.clone());
+            self.builder.member_name(st, i as u32, m.name.to_string());
 
             self.builder.member_decorate(
                 st,
@@ -276,8 +292,66 @@ impl SpirvShaderBase {
     }
 }
 
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
+pub enum StorageClass {
+    UniformConstant,
+    Input,
+    Uniform,
+    Output,
+    Workgroup,
+    CrossWorkgroup,
+    Private,
+    Function,
+    Generic,
+    PushConstant,
+    AtomicCounter,
+    Image,
+}
+
+impl From<StorageClass> for spirv::StorageClass {
+    fn from(value: StorageClass) -> spirv::StorageClass {
+        use self::StorageClass::*;
+
+        match value {
+            UniformConstant => spirv::StorageClass::UniformConstant,
+            Input => spirv::StorageClass::Input,
+            Uniform => spirv::StorageClass::Uniform,
+            Output => spirv::StorageClass::Output,
+            Workgroup => spirv::StorageClass::Workgroup,
+            CrossWorkgroup => spirv::StorageClass::CrossWorkgroup,
+            Private => spirv::StorageClass::Private,
+            Function => spirv::StorageClass::Function,
+            Generic => spirv::StorageClass::Generic,
+            PushConstant => spirv::StorageClass::PushConstant,
+            AtomicCounter => spirv::StorageClass::AtomicCounter,
+            Image => spirv::StorageClass::Image,
+        }
+    }
+}
+
+impl From<spirv::StorageClass> for StorageClass {
+    fn from(value: spirv::StorageClass) -> StorageClass {
+        use self::spirv::StorageClass::*;
+
+        match value {
+            UniformConstant => StorageClass::UniformConstant,
+            Input => StorageClass::Input,
+            Uniform => StorageClass::Uniform,
+            Output => StorageClass::Output,
+            Workgroup => StorageClass::Workgroup,
+            CrossWorkgroup => StorageClass::CrossWorkgroup,
+            Private => StorageClass::Private,
+            Function => StorageClass::Function,
+            Generic => StorageClass::Generic,
+            PushConstant => StorageClass::PushConstant,
+            AtomicCounter => StorageClass::AtomicCounter,
+            Image => StorageClass::Image,
+        }
+    }
+}
+
 /// Description of a SPIR-V type, used for cache keys.
-#[derive(PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug)]
 enum SpirvType {
     Bool,
     Float { width: u32 },
@@ -291,6 +365,10 @@ enum SpirvType {
     Matrix {
         column_type: Word,
         column_count: u32,
+    },
+    Pointer {
+        storage_class: StorageClass,
+        pointee_type: Word,
     },
 }
 

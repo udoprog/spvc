@@ -1,0 +1,12 @@
+[package]
+name = "glsl-struct-derive"
+version = "0.1.0"
+authors = ["John-John Tedro <udoprog@tedro.se>"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "0.11"
+quote = "0.3"
+glsl-struct = { path = "../glsl-struct", version = "0.1" }
