@@ -1,6 +1,9 @@
 [package]
-name = "glsl-struct"
+name = "spvc-shader"
 version = "0.1.0"
 authors = ["John-John Tedro <udoprog@tedro.se>"]
 
 [dependencies]
+error-chain = "0.11"
+rspirv = "0.4"
+spirv_headers = "1.1"

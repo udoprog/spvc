@@ -6,5 +6,7 @@ error_chain! {
     }
 
     errors {
+        MissingType {
+        }
     }
 }
