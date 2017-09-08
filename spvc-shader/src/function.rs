@@ -4,11 +4,12 @@ use super::spirv::{self, Word};
 use super::spirv_type::SpirvType;
 use super::statement::Statement;
 use super::type_key::TypeKey;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
-    statements: Vec<Box<Statement>>,
+    statements: Vec<Rc<Box<Statement>>>,
     returns: Option<Box<SpirvType>>,
 }
 
@@ -69,7 +70,7 @@ impl Function {
 #[derive(Debug)]
 pub struct FunctionBuilder {
     name: String,
-    statements: Vec<Box<Statement>>,
+    statements: Vec<Rc<Box<Statement>>>,
 }
 
 impl FunctionBuilder {
@@ -80,8 +81,8 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn statement<S: 'static + Statement>(&mut self, statement: S) {
-        self.statements.push(Box::new(statement));
+    pub fn statement(&mut self, statement: Rc<Box<Statement>>) {
+        self.statements.push(statement);
     }
 
     pub fn returns_void(self) -> Function {

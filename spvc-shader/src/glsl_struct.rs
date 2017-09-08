@@ -1,19 +1,19 @@
-use super::boxed_glsl_struct_member::BoxedGlslStructMember;
 use super::errors::*;
+use super::glsl_struct_member::GlslStructMember;
 use super::rspirv;
 use super::shader::Shader;
 use super::spirv::{Decoration, Word};
 use super::spirv_type::SpirvType;
 use super::type_key::TypeKey;
-use std::fmt;
+use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct GlslStruct<T> {
+pub struct GlslStruct {
     pub name: &'static str,
-    pub members: Vec<BoxedGlslStructMember<T>>,
+    pub members: Vec<Rc<GlslStructMember>>,
 }
 
-impl<T: fmt::Debug> SpirvType for GlslStruct<T> {
+impl SpirvType for GlslStruct {
     fn register_type(&self, shader: &mut Shader) -> Result<Word> {
         let mut field_types: Vec<Word> = Vec::new();
 

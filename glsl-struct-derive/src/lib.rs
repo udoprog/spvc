@@ -11,7 +11,6 @@ struct Field {
     index: u32,
     ident: syn::Ident,
     const_ident: syn::Ident,
-    ty: quote::Tokens,
     type_builder: quote::Tokens,
 }
 
@@ -21,50 +20,36 @@ struct GlslAttribute {
 }
 
 impl GlslAttribute {
-    pub fn type_builder(&self) -> (quote::Tokens, quote::Tokens) {
+    pub fn type_builder(&self) -> quote::Tokens {
         let ty = self.ty.as_ref().expect(
             "#[glsl(ty = ...)] attribute missing",
         );
 
         match ty.as_str() {
-            "bool" => (quote!(spvc_shader::Bool), quote!(spvc_shader::Bool)),
-            "float" => (quote!(spvc_shader::Float), quote!(spvc_shader::Float)),
-            "mat4" => (
-                quote!(spvc_shader::Matrix<spvc_shader::Vector<spvc_shader::Float>>),
-                quote!(spvc_shader::mat4()),
-            ),
-            "vec2" => (
-                quote!(spvc_shader::Vector<spvc_shader::Float>),
-                quote!(spvc_shader::vec2()),
-            ),
-            "vec3" => (
-                quote!(spvc_shader::Vector<spvc_shader::Float>),
-                quote!(spvc_shader::vec3()),
-            ),
-            "vec4" => (
-                quote!(spvc_shader::Vector<spvc_shader::Float>),
-                quote!(spvc_shader::vec4()),
-            ),
+            "bool" => quote!(spvc_shader::Bool),
+            "float" => quote!(spvc_shader::Float),
+            "mat4" => quote!(spvc_shader::mat4()),
+            "vec2" => quote!(spvc_shader::vec2()),
+            "vec3" => quote!(spvc_shader::vec3()),
+            "vec4" => quote!(spvc_shader::vec4()),
             s => panic!(format!("unsupported type: {}", s)),
         }
     }
 }
 
-fn impl_glsl_member(name: &syn::Ident, field: &Field) -> quote::Tokens {
+fn impl_glsl_member(field: &Field) -> quote::Tokens {
     let index = field.index;
     let ident = &field.ident;
-    let ty = &field.ty;
     let type_builder = &field.type_builder;
 
     let mut toks = quote::Tokens::new();
 
     toks.append(quote!(
-        fn #ident() -> spvc_shader::glsl_struct_member::GlslStructMember<#name, #ty>  {
+        fn #ident() -> spvc_shader::glsl_struct_member::GlslStructMember  {
             spvc_shader::glsl_struct_member::GlslStructMember {
                 name: stringify!(#ident),
                 ty: ::std::rc::Rc::new(#type_builder),
                 index: #index,
-                struct_marker: ::std::marker::PhantomData,
             }
         }
     ));
@@ -76,15 +61,15 @@ fn impl_glsl_member(name: &syn::Ident, field: &Field) -> quote::Tokens {
 fn impl_glsl_struct_fn(name: &syn::Ident, fields: &[Field]) -> quote::Tokens {
     let mut toks = quote::Tokens::new();
 
-    toks.append(
-        format!("fn glsl_struct() -> spvc_shader::glsl_struct::GlslStruct<{}> {{", name),
-    );
+    toks.append("fn glsl_struct() -> spvc_shader::glsl_struct::GlslStruct {");
 
     toks.append("let mut members = Vec::new();");
 
     for field in fields {
         let ident = &field.ident;
-        toks.append(quote! { members.push(#name::#ident().boxed()); });
+        toks.append(
+            quote! { members.push(::std::rc::Rc::new(#name::#ident())); },
+        );
     }
 
     toks.append(quote! {
@@ -142,13 +127,12 @@ fn impl_glsl_struct(ast: &syn::DeriveInput) -> quote::Tokens {
                 let ident = field.ident.as_ref().expect("expected field identifier");
                 let glsl_attribute = glsl_attribute(&field.attrs);
 
-                let (ty, type_builder) = glsl_attribute.type_builder();
+                let type_builder = glsl_attribute.type_builder();
 
                 out.push(Field {
                     index: index as u32,
                     ident: ident.to_owned(),
                     const_ident: ident.to_string().to_uppercase().into(),
-                    ty: ty,
                     type_builder: type_builder,
                 });
             }
@@ -164,7 +148,7 @@ fn impl_glsl_struct(ast: &syn::DeriveInput) -> quote::Tokens {
     toks.append(format!("impl {} {{", &ast.ident));
 
     for field in &fields {
-        toks.append(impl_glsl_member(&name, field));
+        toks.append(impl_glsl_member(field));
     }
 
     toks.append(impl_glsl_struct_fn(name, &fields));

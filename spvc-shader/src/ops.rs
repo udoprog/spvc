@@ -1,13 +1,10 @@
 use super::errors::*;
-use super::load::Load;
-use super::primitives::{Matrix, Vector};
-use super::registered_load::RegisteredLoad;
 use super::registered_statement::RegisteredStatement;
 use super::shader::Shader;
 use super::spirv::Word;
 use super::spirv_type::SpirvType;
 use super::statement::Statement;
-use std::fmt;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Mul<L, R> {
@@ -22,16 +19,16 @@ impl<L, R> Mul<L, R> {
 }
 
 #[derive(Debug)]
-pub struct RegisteredMul {
+pub struct MatrixByMatrixMul {
     result_type: Word,
-    lhs: Box<RegisteredLoad>,
-    rhs: Box<RegisteredLoad>,
+    lhs: Box<RegisteredStatement>,
+    rhs: Box<RegisteredStatement>,
 }
 
-impl RegisteredStatement for RegisteredMul {
+impl RegisteredStatement for MatrixByMatrixMul {
     fn statement_id(&self, shader: &mut Shader) -> Result<Word> {
-        let lhs = self.lhs.load(shader)?;
-        let rhs = self.rhs.load(shader)?;
+        let lhs = self.lhs.statement_id(shader)?;
+        let rhs = self.rhs.statement_id(shader)?;
 
         let id = shader.builder.matrix_times_matrix(
             self.result_type,
@@ -44,65 +41,34 @@ impl RegisteredStatement for RegisteredMul {
     }
 }
 
-impl RegisteredLoad for RegisteredMul {
-    fn load(&self, shader: &mut Shader) -> Result<Word> {
-        self.statement_id(shader)
+impl Statement for Mul<Rc<Box<Statement>>, Rc<Box<Statement>>> {
+    fn statement_type(&self) -> &SpirvType {
+        self.lhs.statement_type()
     }
-}
 
-impl<L, R, T: SpirvType + fmt::Debug> Statement for Mul<L, R>
-where
-    L: Load<LoadedType = Matrix<Vector<T>>>,
-    R: Load<LoadedType = Matrix<Vector<T>>>,
-{
     fn register_statement(&self, shader: &mut Shader) -> Result<Box<RegisteredStatement>> {
-        {
-            let lhs_ty = self.lhs.loaded_type();
-            let rhs_ty = self.rhs.loaded_type();
+        let result_type = self.lhs.statement_type().register_type(shader)?;
 
-            if lhs_ty.column_count != rhs_ty.column_count {
-                return Err("mismatching column count".into());
-            }
+        let lhs = self.lhs.register_statement(shader)?;
+        let rhs = self.rhs.register_statement(shader)?;
 
-            if lhs_ty.column_type.component_count != rhs_ty.column_type.component_count {
-                return Err("mismatching inner component count".into());
-            }
+        let lhs_matrix = self.lhs.statement_type().matrix_dims();
+        let rhs_matrix = self.rhs.statement_type().matrix_dims();
+
+        if lhs_matrix.is_some() && rhs_matrix.is_some() {
+            return Ok(Box::new(MatrixByMatrixMul {
+                result_type: result_type,
+                lhs: lhs,
+                rhs: rhs,
+            }));
         }
 
-        let result_type = self.lhs.loaded_type().register_type(shader)?;
-
-        let lhs = self.lhs.register_load(shader)?;
-        let rhs = self.rhs.register_load(shader)?;
-
-        Ok(Box::new(RegisteredMul {
-            result_type: result_type,
-            lhs: lhs,
-            rhs: rhs,
-        }))
-    }
-}
-
-impl<L, R, T: SpirvType> Load for Mul<L, R>
-where
-    L: Load<LoadedType = Matrix<Vector<T>>>,
-    R: Load<LoadedType = Matrix<Vector<T>>>,
-{
-    type LoadedType = Matrix<Vector<T>>;
-
-    fn loaded_type(&self) -> &Self::LoadedType {
-        self.lhs.loaded_type()
-    }
-
-    fn register_load(&self, shader: &mut Shader) -> Result<Box<RegisteredLoad>> {
-        let result_type = self.lhs.loaded_type().register_type(shader)?;
-
-        let lhs = self.lhs.register_load(shader)?;
-        let rhs = self.rhs.register_load(shader)?;
-
-        Ok(Box::new(RegisteredMul {
-            result_type: result_type,
-            lhs: lhs,
-            rhs: rhs,
-        }))
+        Err(
+            format!(
+                "unsupported arguments (lhs: {:?}, rhs: {:?})",
+                self.lhs,
+                self.rhs
+            ).into(),
+        )
     }
 }

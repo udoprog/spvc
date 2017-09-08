@@ -12,5 +12,17 @@ pub trait SpirvType: fmt::Debug {
         Ok(())
     }
 
+    /// Returns dimension of this type as a matrix.
+    /// None if type is not a matrix.
+    fn matrix_dims(&self) -> Option<(u32, u32)> {
+        None
+    }
+
+    /// Returns dimension of vector (as part of column major matrix).
+    /// None if type is not a vector.
+    fn row_count(&self) -> Option<u32> {
+        None
+    }
+
     fn width(&self) -> u32;
 }

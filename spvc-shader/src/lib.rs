@@ -6,11 +6,9 @@ extern crate error_chain;
 mod access;
 mod function;
 mod global_variable;
-mod load;
 mod ops;
 mod pointer;
 mod primitives;
-mod registered_load;
 mod registered_statement;
 mod registered_variable;
 mod shader;
@@ -19,7 +17,6 @@ mod statement;
 mod storage_class;
 mod type_key;
 mod variable;
-pub mod boxed_glsl_struct_member;
 pub mod errors;
 pub mod glsl_struct;
 pub mod glsl_struct_member;
@@ -36,28 +33,30 @@ pub use self::primitives::Float;
 pub use self::primitives::Matrix;
 pub use self::primitives::Vector;
 pub use self::shader::Shader;
+use self::statement::Statement;
 pub use self::storage_class::StorageClass;
+use std::rc::Rc;
 
-pub fn mul<L, R>(lhs: L, rhs: R) -> Mul<L, R> {
-    Mul::new(lhs, rhs)
+pub fn mul(lhs: Rc<Box<Statement>>, rhs: Rc<Box<Statement>>) -> Rc<Box<Statement>> {
+    Rc::new(Box::new(Mul::new(lhs, rhs)))
 }
 
 /// Corresponds to the GLSL type vec2.
-pub fn vec2() -> Vector<Float> {
+pub fn vec2() -> Vector {
     Vector::new(Float, 3)
 }
 
 /// Corresponds to the GLSL type vec3.
-pub fn vec3() -> Vector<Float> {
+pub fn vec3() -> Vector {
     Vector::new(Float, 3)
 }
 
 /// Corresponds to the GLSL type vec4.
-pub fn vec4() -> Vector<Float> {
+pub fn vec4() -> Vector {
     Vector::new(Float, 4)
 }
 
 /// Corresponds to the GLSL type mat4.
-pub fn mat4() -> Matrix<Vector<Float>> {
+pub fn mat4() -> Matrix {
     Matrix::new(Vector::new(Float, 4), 4)
 }

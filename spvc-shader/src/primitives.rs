@@ -4,6 +4,7 @@ use super::shader::Shader;
 use super::spirv::{Decoration, Word};
 use super::spirv_type::SpirvType;
 use super::type_key::TypeKey;
+use std::rc::Rc;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Float;
@@ -49,22 +50,22 @@ impl SpirvType for Bool {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Vector<T> {
-    pub component: T,
+#[derive(Debug, Clone)]
+pub struct Vector {
+    pub component: Rc<SpirvType>,
     pub component_count: u32,
 }
 
-impl<T> Vector<T> {
-    pub fn new(component: T, component_count: u32) -> Vector<T> {
+impl Vector {
+    pub fn new<T: 'static + SpirvType>(component: T, component_count: u32) -> Vector {
         Vector {
-            component: component,
+            component: Rc::new(component),
             component_count: component_count,
         }
     }
 }
 
-impl<T: SpirvType> SpirvType for Vector<T> {
+impl SpirvType for Vector {
     fn register_type(&self, shader: &mut Shader) -> Result<Word> {
         let component_type = self.component.register_type(shader)?;
 
@@ -80,24 +81,28 @@ impl<T: SpirvType> SpirvType for Vector<T> {
     fn width(&self) -> u32 {
         self.component.width() * self.component_count
     }
+
+    fn row_count(&self) -> Option<u32> {
+        Some(self.component_count)
+    }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Matrix<T> {
-    pub column_type: T,
+#[derive(Debug, Clone)]
+pub struct Matrix {
+    pub column_type: Rc<SpirvType>,
     pub column_count: u32,
 }
 
-impl<T> Matrix<T> {
-    pub fn new(column_type: T, column_count: u32) -> Matrix<T> {
+impl Matrix {
+    pub fn new<T: 'static + SpirvType>(column_type: T, column_count: u32) -> Matrix {
         Matrix {
-            column_type: column_type,
+            column_type: Rc::new(column_type),
             column_count: column_count,
         }
     }
 }
 
-impl<T: SpirvType> SpirvType for Matrix<T> {
+impl SpirvType for Matrix {
     fn register_type(&self, shader: &mut Shader) -> Result<Word> {
         let column_type = self.column_type.register_type(shader)?;
 
@@ -108,10 +113,6 @@ impl<T: SpirvType> SpirvType for Matrix<T> {
             },
             |s| Ok(s.builder.type_matrix(column_type, self.column_count)),
         )
-    }
-
-    fn width(&self) -> u32 {
-        self.column_type.width() * self.column_count
     }
 
     fn register_struct_extra(&self, id: Word, index: u32, shader: &mut Shader) -> Result<()> {
@@ -130,5 +131,15 @@ impl<T: SpirvType> SpirvType for Matrix<T> {
         );
 
         Ok(())
+    }
+
+    fn width(&self) -> u32 {
+        self.column_type.width() * self.column_count
+    }
+
+    fn matrix_dims(&self) -> Option<(u32, u32)> {
+        return self.column_type.row_count().map(|row_count| {
+            (self.column_count, row_count)
+        });
     }
 }

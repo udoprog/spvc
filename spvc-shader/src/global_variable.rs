@@ -1,28 +1,27 @@
 use super::access::Access;
 use super::errors::*;
-use super::glsl_struct::GlslStruct;
 use super::glsl_struct_member::GlslStructMember;
 use super::pointer::Pointer;
 use super::registered_variable::RegisteredVariable;
 use super::shader::Shader;
 use super::spirv::Word;
 use super::spirv_type::SpirvType;
+use super::statement::Statement;
 use super::storage_class::StorageClass;
 use super::variable::Variable;
-use std::fmt;
 use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct GlobalVariable<T> {
+pub struct GlobalVariable {
     name: String,
     storage_class: StorageClass,
-    ty: Rc<T>,
+    ty: Rc<SpirvType>,
     set: Option<u32>,
     binding: Option<u32>,
     location: Option<u32>,
 }
 
-impl<T: SpirvType> Variable for GlobalVariable<T> {
+impl Variable for GlobalVariable {
     fn register_variable(&self, shader: &mut Shader) -> Result<Box<RegisteredVariable>> {
         let id = shader.global_variable(
             self.storage_class,
@@ -36,11 +35,12 @@ impl<T: SpirvType> Variable for GlobalVariable<T> {
     }
 }
 
-impl<T> GlobalVariable<T>
-where
-    T: SpirvType,
-{
-    pub fn new(name: &str, ty: T, storage_class: StorageClass) -> GlobalVariable<T> {
+impl GlobalVariable {
+    pub fn new<T: 'static + SpirvType>(
+        name: &str,
+        ty: T,
+        storage_class: StorageClass,
+    ) -> GlobalVariable {
         GlobalVariable {
             name: String::from(name),
             storage_class: storage_class,
@@ -51,7 +51,7 @@ where
         }
     }
 
-    pub fn with_set(self, set: u32) -> GlobalVariable<T> {
+    pub fn with_set(self, set: u32) -> GlobalVariable {
         GlobalVariable {
             name: self.name,
             storage_class: self.storage_class,
@@ -62,7 +62,7 @@ where
         }
     }
 
-    pub fn with_binding(self, binding: u32) -> GlobalVariable<T> {
+    pub fn with_binding(self, binding: u32) -> GlobalVariable {
         GlobalVariable {
             name: self.name,
             storage_class: self.storage_class,
@@ -73,7 +73,7 @@ where
         }
     }
 
-    pub fn with_location(self, location: u32) -> GlobalVariable<T> {
+    pub fn with_location(self, location: u32) -> GlobalVariable {
         GlobalVariable {
             name: self.name,
             storage_class: self.storage_class,
@@ -83,13 +83,8 @@ where
             location: Some(location),
         }
     }
-}
 
-impl<T: fmt::Debug> GlobalVariable<GlslStruct<T>> {
-    pub fn access<M: SpirvType>(
-        &self,
-        member: GlslStructMember<T, M>,
-    ) -> Access<GlobalVariable<GlslStruct<T>>, M> {
+    pub fn access(&self, member: GlslStructMember) -> Rc<Box<Statement>> {
         let base = GlobalVariable {
             name: self.name.clone(),
             storage_class: self.storage_class,
@@ -99,16 +94,16 @@ impl<T: fmt::Debug> GlobalVariable<GlslStruct<T>> {
             location: self.location,
         };
 
-        Access {
+        Rc::new(Box::new(Access {
             base: base,
             pointer_type: Pointer(self.storage_class, member.ty.clone()),
-            loaded_type: member.ty.clone(),
+            accessed_type: member.ty.clone(),
             index: member.index,
-        }
+        }))
     }
 }
 
-impl<T: SpirvType> SpirvType for GlobalVariable<T> {
+impl SpirvType for GlobalVariable {
     fn register_type(&self, shader: &mut Shader) -> Result<Word> {
         let pointee_type = self.ty.register_type(shader)?;
         shader.register_pointer_type(self.storage_class, pointee_type)
