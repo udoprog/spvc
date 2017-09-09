@@ -1,3 +1,4 @@
+use super::BadOp;
 use errors::*;
 use op::Op;
 use reg_op::RegOp;
@@ -16,22 +17,24 @@ macro_rules! expand_vec {
         $($const: f32,)*
     }
 
-    pub fn $fn(source: Rc<Box<Op>>, $($const: f32,)*) -> Result<Rc<Box<Op>>> {
+    pub fn $fn(source: Rc<Box<Op>>, $($const: f32,)*) -> Rc<Box<Op>> {
         if let Some(vector) = source.op_type().as_vector() {
             if vector.component_count == $orig_size {
                 let result_type = Vector::new(Float, $dest_size);
 
-                return Ok(Rc::new(Box::new($st {
+                return Rc::new(Box::new($st {
                     result_type: result_type,
                     source: source,
                     $($const: $const,)*
-                })));
+                }));
             }
         }
 
-        Err(
-            ErrorKind::VecMismatch(stringify!($fn), source.op_type().display()).into(),
-        )
+        Rc::new(Box::new(BadOp::new(
+            stringify!($fn),
+            "argument type mismatch",
+            vec![source],
+        )))
     }
 
     impl Op for $st {

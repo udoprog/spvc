@@ -1,3 +1,4 @@
+use super::BadOp;
 use errors::*;
 use op::Op;
 use pointer::Pointer;
@@ -14,26 +15,20 @@ pub struct Store {
     source: Rc<Box<Op>>,
 }
 
-pub fn store(dest: Rc<Box<Op>>, source: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
-    let dest_type = dest.op_type().as_pointer().ok_or(
-        ErrorKind::ExpectedPointer(
-            "store",
-            source.op_type().display(),
-        ),
-    )?;
-
-    if !dest_type.pointee_type.matches(source.op_type()) {
-        return Err(
-            ErrorKind::StoreMismatch("store", dest_type.display(), source.op_type().display())
-                .into(),
-        );
+pub fn store(dest: Rc<Box<Op>>, source: Rc<Box<Op>>) -> Rc<Box<Op>> {
+    if let Some(dest_type) = dest.op_type().as_pointer() {
+        if dest_type.pointee_type.matches(source.op_type()) {
+            return Rc::new(Box::new(Store {
+                dest: dest,
+                dest_type: dest_type,
+                source: source,
+            }));
+        }
     }
 
-    Ok(Rc::new(Box::new(Store {
-        dest: dest,
-        dest_type: dest_type,
-        source: source,
-    })))
+    Rc::new(Box::new(
+        BadOp::new("store", "argument type mismatch", vec![source]),
+    ))
 }
 
 impl Op for Store {

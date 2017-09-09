@@ -15,13 +15,13 @@ pub trait SpirvType: fmt::Debug {
     fn register_type(&self, shader: &mut Shader) -> Result<Word>;
 
     /// Checks if the current type is suitable for a matrix-by-matrix multiplication.
-    fn matrix_times_matrix(&self, _other: &SpirvType) -> Result<Option<Matrix>> {
-        Ok(None)
+    fn matrix_times_matrix(&self, _other: &SpirvType) -> Option<Matrix> {
+        None
     }
 
     /// Checks if the current type is suitable for a matrix-by-vector multiplication.
-    fn matrix_times_vector(&self, _other: &SpirvType) -> Result<Option<Vector>> {
-        Ok(None)
+    fn matrix_times_vector(&self, _other: &SpirvType) -> Option<Vector> {
+        None
     }
 
     /// Hook to register extra directives when this type is the member of a struct.
@@ -71,6 +71,10 @@ pub trait SpirvType: fmt::Debug {
         None
     }
 
+    fn as_no_type(&self) -> Option<NoType> {
+        None
+    }
+
     /// Returns dimension of vector (as part of column major matrix).
     /// None if type is not a vector.
     fn row_count(&self) -> Option<u32> {
@@ -82,4 +86,29 @@ pub trait SpirvType: fmt::Debug {
 
     /// Check if this type matches another type.
     fn matches(&self, other: &SpirvType) -> bool;
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct NoType;
+
+impl SpirvType for NoType {
+    fn display(&self) -> String {
+        format!("!")
+    }
+
+    fn register_type(&self, _: &mut Shader) -> Result<Word> {
+        Err(ErrorKind::NoType.into())
+    }
+
+    fn width(&self) -> u32 {
+        0
+    }
+
+    fn as_no_type(&self) -> Option<NoType> {
+        Some(*self)
+    }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        other.as_no_type().is_some()
+    }
 }

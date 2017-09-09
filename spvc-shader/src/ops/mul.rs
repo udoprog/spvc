@@ -1,3 +1,4 @@
+use super::BadOp;
 use errors::*;
 use op::Op;
 use reg_op::RegOp;
@@ -7,29 +8,26 @@ use spirv_type::SpirvType;
 use std::rc::Rc;
 use types::{Matrix, Vector};
 
-pub fn mul(lhs: Rc<Box<Op>>, rhs: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
-    if let Some(op_type) = lhs.op_type().matrix_times_matrix(rhs.op_type())? {
-        return Ok(Rc::new(Box::new(MatrixTimesMatrixMul {
+pub fn mul(lhs: Rc<Box<Op>>, rhs: Rc<Box<Op>>) -> Rc<Box<Op>> {
+    if let Some(op_type) = lhs.op_type().matrix_times_matrix(rhs.op_type()) {
+        return Rc::new(Box::new(MatrixTimesMatrixMul {
             op_type: op_type,
             lhs: lhs,
             rhs: rhs,
-        })));
+        }));
     }
 
-    if let Some(op_type) = lhs.op_type().matrix_times_vector(rhs.op_type())? {
-        return Ok(Rc::new(Box::new(MatrixTimesVectorMul {
+    if let Some(op_type) = lhs.op_type().matrix_times_vector(rhs.op_type()) {
+        return Rc::new(Box::new(MatrixTimesVectorMul {
             op_type: op_type,
             lhs: lhs,
             rhs: rhs,
-        })));
+        }));
     }
 
-    Err(
-        ErrorKind::ArgumentMismatch(
-            "mul",
-            vec![lhs.op_type().display(), rhs.op_type().display()],
-        ).into(),
-    )
+    Rc::new(Box::new(
+        BadOp::new("mul", "argument type mismatch", vec![lhs, rhs]),
+    ))
 }
 
 #[derive(Debug)]

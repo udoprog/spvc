@@ -1,5 +1,3 @@
-use super::matrix_dims::MatrixDims;
-use super::vector_dims::VectorDims;
 use rspirv;
 
 error_chain! {
@@ -8,44 +6,17 @@ error_chain! {
     }
 
     errors {
-        MissingType {
-        }
-
-        NoBase {
-        }
-
-        NoOp {
-        }
-
-        NoStorageClass {
+        BadOp(op: &'static str, reason: &'static str, arguments: Vec<String>) {
         }
 
         NoObjectId {
         }
 
-        /// Bad argument to an operation.
-        BadArgument {
+        NoOp {
         }
 
-        MatrixTimesMatrixMismatch(lhs: MatrixDims, rhs: MatrixDims) {
-        }
-
-        MatrixTimesVectorMismatch(lhs: MatrixDims, rhs: VectorDims) {
-        }
-
-        ExpectedMatrix(op: &'static str, actual: String) {
-        }
-
-        ExpectedPointer(op: &'static str, actual: String) {
-        }
-
-        ArgumentMismatch(op: &'static str, arguments: Vec<String>) {
-        }
-
-        StoreMismatch(op: &'static str, dest: String, source: String) {
-        }
-
-        VecMismatch(op: &'static str, source: String) {
+        /// Illegal operation on NoType.
+        NoType {
         }
     }
 }

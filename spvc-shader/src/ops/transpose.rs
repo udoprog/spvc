@@ -1,3 +1,4 @@
+use super::BadOp;
 use errors::*;
 use op::Op;
 use reg_op::RegOp;
@@ -14,21 +15,22 @@ pub struct Transpose {
 }
 
 /// Reflects a transpose operation.
-pub fn transpose(matrix: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
-    // Expect a transposable matrix as argument type.
-    let op_type = matrix
-        .op_type()
-        .as_matrix_dims()
-        .ok_or(ErrorKind::ExpectedMatrix(
-            "transpose",
-            matrix.op_type().display(),
-        ))?
-        .transpose_type()?;
+pub fn transpose(matrix: Rc<Box<Op>>) -> Rc<Box<Op>> {
+    // Expect a matrix as argument type.
+    if let Some(dims) = matrix.op_type().as_matrix_dims() {
+        let op_type = dims.transpose_type();
 
-    Ok(Rc::new(Box::new(Transpose {
-        op_type: op_type,
-        matrix: matrix,
-    })))
+        return Rc::new(Box::new(Transpose {
+            op_type: op_type,
+            matrix: matrix,
+        }));
+    }
+
+    Rc::new(Box::new(BadOp::new(
+        "transpose",
+        "expected transposable matrix",
+        vec![matrix],
+    )))
 }
 
 impl Op for Transpose {

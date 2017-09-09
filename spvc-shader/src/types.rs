@@ -199,20 +199,20 @@ impl Matrix {
 }
 
 impl SpirvType for Matrix {
-    fn matrix_times_matrix(&self, rhs: &SpirvType) -> Result<Option<Matrix>> {
+    fn matrix_times_matrix(&self, rhs: &SpirvType) -> Option<Matrix> {
         if let (Some(lhs_dims), Some(rhs_dims)) = (self.as_matrix_dims(), rhs.as_matrix_dims()) {
-            return lhs_dims.matrix_mul_type(rhs_dims).map(Some);
+            return lhs_dims.matrix_mul_type(rhs_dims);
         }
 
-        Ok(None)
+        None
     }
 
-    fn matrix_times_vector(&self, rhs: &SpirvType) -> Result<Option<Vector>> {
+    fn matrix_times_vector(&self, rhs: &SpirvType) -> Option<Vector> {
         if let (Some(lhs_dims), Some(rhs_dims)) = (self.as_matrix_dims(), rhs.as_vector_dims()) {
-            return lhs_dims.vector_mul_type(rhs_dims).map(Some);
+            return lhs_dims.vector_mul_type(rhs_dims);
         }
 
-        Ok(None)
+        None
     }
 
     fn register_type(&self, shader: &mut Shader) -> Result<Word> {

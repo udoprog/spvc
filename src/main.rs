@@ -62,19 +62,19 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
 
     {
         let mut main = FunctionBuilder::new("main");
-        let camera = global.access_member(Global::camera())?;
-        let view = global.access_member(Global::view())?;
+        let camera = global.access_member(Global::camera());
+        let view = global.access_member(Global::view());
 
-        let worldview = mul(load(view)?, load(camera.clone())?)?;
+        let worldview = mul(load(view), load(camera.clone()));
 
-        let pos = vec3_to_vec4(load(position.clone())?, 1.0)?;
-        let pos = mul(load(model.access_member(Model::model())?)?, pos)?;
-        let pos = mul(worldview, pos)?;
-        let pos = mul(load(global.access_member(Global::projection())?)?, pos)?;
+        let pos = vec3_to_vec4(load(position.clone()), 1.0);
+        let pos = mul(load(model.access_member(Model::model())), pos);
+        let pos = mul(worldview, pos);
+        let pos = mul(load(global.access_member(Global::projection())), pos);
 
-        main.op(store(gl_position.clone(), pos)?);
-        main.op(store(v_tex_coord.clone(), load(tex_coord.clone())?)?);
-        main.op(store(v_normal.clone(), load(normal.clone())?)?);
+        main.op(store(gl_position.clone(), pos));
+        main.op(store(v_tex_coord.clone(), load(tex_coord.clone())));
+        main.op(store(v_normal.clone(), load(normal.clone())));
 
         shader.vertex_entry_point(
             main.returns_void(),

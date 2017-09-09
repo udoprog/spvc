@@ -1,4 +1,3 @@
-use super::errors::*;
 use super::types::{Float, Matrix, Vector};
 use super::vector_dims::VectorDims;
 
@@ -18,25 +17,25 @@ impl MatrixDims {
     }
 
     /// Reflects the multiplication of a matrix and a matrix.
-    pub fn matrix_mul_type(&self, other: MatrixDims) -> Result<Matrix> {
+    pub fn matrix_mul_type(&self, other: MatrixDims) -> Option<Matrix> {
         if self.cols != other.rows {
-            return Err(ErrorKind::MatrixTimesMatrixMismatch(*self, other).into());
+            return None;
         }
 
-        Ok(Matrix::new(Vector::new(Float, self.rows), other.cols))
+        Some(Matrix::new(Vector::new(Float, self.rows), other.cols))
     }
 
     /// Reflects the multiplication of a matrix and a vector.
-    pub fn vector_mul_type(&self, other: VectorDims) -> Result<Vector> {
+    pub fn vector_mul_type(&self, other: VectorDims) -> Option<Vector> {
         if self.rows != other.count {
-            return Err(ErrorKind::MatrixTimesVectorMismatch(*self, other).into());
+            return None;
         }
 
-        Ok(Vector::new(Float, other.count))
+        Some(Vector::new(Float, other.count))
     }
 
     /// Transpose the current matrix and return the new type.
-    pub fn transpose_type(&self) -> Result<Matrix> {
-        Ok(Matrix::new(Vector::new(Float, self.cols), self.rows))
+    pub fn transpose_type(&self) -> Matrix {
+        Matrix::new(Vector::new(Float, self.cols), self.rows)
     }
 }

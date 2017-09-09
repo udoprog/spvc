@@ -1,3 +1,4 @@
+use super::BadOp;
 use errors::*;
 use op::Op;
 use pointer::Pointer;
@@ -15,17 +16,17 @@ pub struct Load {
     pub object: Rc<Box<Op>>,
 }
 
-pub fn load(object: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
+pub fn load(object: Rc<Box<Op>>) -> Rc<Box<Op>> {
     if let Some(pointer) = object.op_type().as_pointer() {
-        return Ok(Rc::new(Box::new(Load {
+        return Rc::new(Box::new(Load {
             pointer: pointer,
             object: object,
-        })));
+        }));
     }
 
-    Err(
-        ErrorKind::ArgumentMismatch("load", vec![object.op_type().display()]).into(),
-    )
+    Rc::new(Box::new(
+        BadOp::new("load", "expected pointer", vec![object]),
+    ))
 }
 
 impl Op for Load {

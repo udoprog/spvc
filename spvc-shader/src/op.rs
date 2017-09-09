@@ -1,4 +1,5 @@
 use super::errors::*;
+use super::ops::BadOp;
 use super::reg_op::RegOp;
 use super::shader::Shader;
 use super::spirv_type::SpirvType;
@@ -23,4 +24,9 @@ pub trait Op: fmt::Debug {
     fn op_type(&self) -> &SpirvType;
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>>;
+
+    /// Convert this op to a bad op, if it is one.
+    fn as_bad_op(&self) -> Option<&BadOp> {
+        None
+    }
 }

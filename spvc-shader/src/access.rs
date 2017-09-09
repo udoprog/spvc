@@ -1,5 +1,6 @@
 use super::errors::*;
 use super::op::Op;
+use super::ops::BadOp;
 use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::shader::Shader;
@@ -10,32 +11,38 @@ use super::struct_member::StructMember;
 use std::rc::Rc;
 
 pub trait AccessTrait {
-    fn access_member(&self, member: StructMember) -> Result<Rc<Box<Op>>>;
+    fn access_member(&self, member: StructMember) -> Rc<Box<Op>>;
 }
 
 impl AccessTrait for Rc<Box<Op>> {
-    fn access_member(&self, member: StructMember) -> Result<Rc<Box<Op>>> {
+    fn access_member(&self, member: StructMember) -> Rc<Box<Op>> {
         let base = self.base().map(Clone::clone).unwrap_or_else(
             || self.clone(),
         );
 
-        let storage_class = self.storage_class().ok_or(ErrorKind::NoStorageClass)?;
+        if let Some(storage_class) = self.storage_class() {
+            let mut access_chain = self.access_chain()
+                .map(|slice| slice.to_vec())
+                .unwrap_or_else(|| vec![]);
 
-        let mut access_chain = self.access_chain()
-            .map(|slice| slice.to_vec())
-            .unwrap_or_else(|| vec![]);
+            access_chain.push(member.index);
 
-        access_chain.push(member.index);
+            let member_type = Rc::new(member.ty);
 
-        let member_type = Rc::new(member.ty);
+            return Rc::new(Box::new(Access {
+                base: base,
+                storage_class: storage_class,
+                pointer_type: Pointer::new(storage_class, member_type.clone()),
+                accessed_type: member_type.clone(),
+                access_chain: access_chain,
+            }));
+        }
 
-        Ok(Rc::new(Box::new(Access {
-            base: base,
-            storage_class: storage_class,
-            pointer_type: Pointer::new(storage_class, member_type.clone()),
-            accessed_type: member_type.clone(),
-            access_chain: access_chain,
-        })))
+        Rc::new(Box::new(BadOp::new(
+            "access_member",
+            "expected pointer type",
+            vec![self.clone()],
+        )))
     }
 }
 
@@ -59,7 +66,7 @@ pub struct RegisteredAccess {
 
 impl RegOp for RegisteredAccess {
     fn op_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
-        let base = self.base.op_id(shader)?.ok_or(ErrorKind::NoBase)?;
+        let base = self.base.op_id(shader)?.ok_or(ErrorKind::NoOp)?;
 
         let id = shader.builder.access_chain(
             self.pointer_type,
