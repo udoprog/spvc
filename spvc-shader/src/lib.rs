@@ -26,7 +26,7 @@ pub type GlslBool = u32;
 pub use self::access::AccessTrait;
 pub use self::function::FunctionBuilder;
 pub use self::global_var::GlobalVar;
-pub use self::ops::{Load, Mul, Store};
+pub use self::ops::{Load, Store, Transpose, mul};
 pub use self::primitives::Bool;
 pub use self::primitives::Float;
 pub use self::primitives::Matrix;
@@ -52,4 +52,10 @@ pub fn vec4() -> Vector {
 /// Corresponds to the GLSL type mat4.
 pub fn mat4() -> Matrix {
     Matrix::new(Vector::new(Float, 4), 4)
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct MatrixDims {
+    rows: u32,
+    cols: u32,
 }

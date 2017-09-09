@@ -52,6 +52,14 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
         .with_location(2)
         .build();
 
+    let v_normal = GlobalVar::new("v_normal", vec3(), StorageClass::Output)
+        .with_location(0)
+        .build();
+
+    let v_tex_coord = GlobalVar::new("v_tex_coord", vec2(), StorageClass::Output)
+        .with_location(1)
+        .build();
+
     let gl_position = GlobalVar::new("gl_Position", vec3(), StorageClass::Output)
         .with_built_in(BuiltIn::Position)
         .build();
@@ -61,13 +69,17 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
         let camera = global.access_member(Global::camera())?;
         let view = global.access_member(Global::view())?;
 
-        let cameraview = Mul::new(camera.clone(), view);
-        let again = Mul::new(camera.clone(), cameraview.clone());
+        let worldview = mul(view, camera.clone())?;
 
-        let loaded_position = Load::new(position.clone());
+        main.op(Store::new(gl_position.clone(), Load::new(position.clone())));
 
-        main.op(again);
-        main.op(Store::new(gl_position.clone(), loaded_position));
+        main.op(Store::new(
+            v_tex_coord.clone(),
+            Load::new(tex_coord.clone()),
+        ));
+
+        let n = Load::new(normal.clone());
+        Store::new(v_normal, Transpose::new(n));
 
         shader.vertex_entry_point(
             main.returns_void(),

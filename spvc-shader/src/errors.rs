@@ -1,3 +1,4 @@
+use super::MatrixDims;
 use rspirv;
 
 error_chain! {
@@ -19,6 +20,16 @@ error_chain! {
         }
 
         NoObjectId {
+        }
+
+        /// Bad argument to an operation.
+        BadArgument {
+        }
+
+        MulMismatch {
+        }
+
+        MatrixMulMismatch(lhs: MatrixDims, rhs: MatrixDims) {
         }
     }
 }

@@ -1,5 +1,6 @@
+use super::MatrixDims;
 use super::errors::*;
-use super::rspirv;
+use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{Decoration, Word};
 use super::spirv_type::SpirvType;
@@ -115,6 +116,8 @@ impl SpirvType for Matrix {
         )
     }
 
+    /// Decorates this matrix as part of the struct.
+    /// This is required to determine the complete layout of the struct.
     fn register_struct_extra(&self, id: Word, index: u32, shader: &mut Shader) -> Result<()> {
         shader.builder.member_decorate(
             id,
@@ -127,7 +130,7 @@ impl SpirvType for Matrix {
             id,
             index,
             Decoration::MatrixStride,
-            vec![rspirv::mr::Operand::LiteralInt32(16)],
+            vec![Operand::LiteralInt32(self.column_type.width())],
         );
 
         Ok(())
@@ -137,9 +140,12 @@ impl SpirvType for Matrix {
         self.column_type.width() * self.column_count
     }
 
-    fn matrix_dims(&self) -> Option<(u32, u32)> {
+    fn matrix_dims(&self) -> Option<MatrixDims> {
         return self.column_type.row_count().map(|row_count| {
-            (self.column_count, row_count)
+            MatrixDims {
+                cols: self.column_count,
+                rows: row_count,
+            }
         });
     }
 }

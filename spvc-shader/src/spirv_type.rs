@@ -1,9 +1,10 @@
+use super::MatrixDims;
 use super::errors::*;
 use super::shader::Shader;
 use super::spirv::Word;
 use std::fmt;
 
-/// Describes a type in SPIR-V.
+/// Reflects a type in SPIR-V.
 pub trait SpirvType: fmt::Debug {
     fn register_type(&self, shader: &mut Shader) -> Result<Word>;
 
@@ -14,7 +15,7 @@ pub trait SpirvType: fmt::Debug {
 
     /// Returns dimension of this type as a matrix.
     /// None if type is not a matrix.
-    fn matrix_dims(&self) -> Option<(u32, u32)> {
+    fn matrix_dims(&self) -> Option<MatrixDims> {
         None
     }
 
@@ -24,5 +25,6 @@ pub trait SpirvType: fmt::Debug {
         None
     }
 
+    /// Width in bytes of the type.
     fn width(&self) -> u32;
 }
