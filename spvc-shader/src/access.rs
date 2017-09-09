@@ -45,7 +45,7 @@ pub struct RegisteredAccess {
 }
 
 impl RegisteredStatement for RegisteredAccess {
-    fn statement_id(&self, shader: &mut Shader) -> Result<Word> {
+    fn statement_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
         let base = self.base.variable_id(shader)?;
 
         let access_id = shader.builder.access_chain(
@@ -63,7 +63,7 @@ impl RegisteredStatement for RegisteredAccess {
             vec![],
         )?;
 
-        Ok(id)
+        Ok(Some(id))
     }
 }
 

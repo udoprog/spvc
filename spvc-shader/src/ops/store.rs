@@ -49,11 +49,14 @@ pub struct RegisteredStore {
 }
 
 impl RegisteredStatement for RegisteredStore {
-    fn statement_id(&self, shader: &mut Shader) -> Result<Word> {
+    fn statement_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
         let pointer = self.destination.variable_id(shader)?;
-        let source = self.source.statement_id(shader)?;
+
+        let source = self.source.statement_id(shader)?.ok_or(
+            ErrorKind::NoObjectId,
+        )?;
 
         shader.builder.store(pointer, source, None, vec![])?;
-        Ok(0)
+        Ok(None)
     }
 }

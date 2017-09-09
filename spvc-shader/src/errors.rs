@@ -11,5 +11,8 @@ error_chain! {
 
         NoStorageClass {
         }
+
+        NoObjectId {
+        }
     }
 }

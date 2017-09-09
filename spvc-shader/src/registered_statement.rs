@@ -7,5 +7,5 @@ use std::fmt;
 pub trait RegisteredStatement: fmt::Debug {
     /// Reflects the object ID of the statement.
     /// Using the object ID tends to destroy it.
-    fn statement_id(&self, shader: &mut Shader) -> Result<Word>;
+    fn statement_id(&self, shader: &mut Shader) -> Result<Option<Word>>;
 }

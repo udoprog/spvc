@@ -26,9 +26,9 @@ pub struct MatrixByMatrixMul {
 }
 
 impl RegisteredStatement for MatrixByMatrixMul {
-    fn statement_id(&self, shader: &mut Shader) -> Result<Word> {
-        let lhs = self.lhs.statement_id(shader)?;
-        let rhs = self.rhs.statement_id(shader)?;
+    fn statement_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
+        let lhs = self.lhs.statement_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
+        let rhs = self.rhs.statement_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
 
         let id = shader.builder.matrix_times_matrix(
             self.result_type,
@@ -37,7 +37,7 @@ impl RegisteredStatement for MatrixByMatrixMul {
             rhs,
         )?;
 
-        Ok(id)
+        Ok(Some(id))
     }
 }
 

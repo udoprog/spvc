@@ -42,7 +42,7 @@ pub struct RegisteredLoad {
 }
 
 impl RegisteredStatement for RegisteredLoad {
-    fn statement_id(&self, shader: &mut Shader) -> Result<Word> {
+    fn statement_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
         let pointer = self.variable.variable_id(shader)?;
 
         let id = shader.builder.load(
@@ -53,6 +53,6 @@ impl RegisteredStatement for RegisteredLoad {
             vec![],
         )?;
 
-        Ok(id)
+        Ok(Some(id))
     }
 }
