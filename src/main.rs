@@ -36,24 +36,23 @@ pub struct Global {
 fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
     let mut shader = Shader::new();
 
-    let model = GlobalVariable::new("model", Model::glsl_struct(), StorageClass::Uniform).build();
+    let model = GlobalVar::new("model", Model::glsl_struct(), StorageClass::Uniform).build();
 
-    let global = GlobalVariable::new("global", Global::glsl_struct(), StorageClass::Uniform)
-        .build();
+    let global = GlobalVar::new("global", Global::glsl_struct(), StorageClass::Uniform).build();
 
-    let position = GlobalVariable::new("location", vec3(), StorageClass::Input)
+    let position = GlobalVar::new("location", vec3(), StorageClass::Input)
         .with_location(0)
         .build();
 
-    let normal = GlobalVariable::new("normal", vec3(), StorageClass::Input)
+    let normal = GlobalVar::new("normal", vec3(), StorageClass::Input)
         .with_location(1)
         .build();
 
-    let tex_coord = GlobalVariable::new("tex_coord", vec2(), StorageClass::Input)
+    let tex_coord = GlobalVar::new("tex_coord", vec2(), StorageClass::Input)
         .with_location(2)
         .build();
 
-    let gl_position = GlobalVariable::new("gl_Position", vec3(), StorageClass::Output)
+    let gl_position = GlobalVar::new("gl_Position", vec3(), StorageClass::Output)
         .with_built_in(BuiltIn::Position)
         .build();
 
@@ -67,8 +66,8 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
 
         let loaded_position = Load::new(position.clone());
 
-        main.statement(again);
-        main.statement(Store::new(gl_position, loaded_position));
+        main.op(again);
+        main.op(Store::new(gl_position, loaded_position));
 
         shader.vertex_entry_point(
             main.returns_void(),

@@ -1,21 +1,21 @@
 use super::errors::*;
 use super::glsl_struct_member::GlslStructMember;
+use super::op::Op;
 use super::pointer::Pointer;
-use super::registered_statement::RegisteredStatement;
-use super::registered_variable::RegisteredVariable;
+use super::reg_op::RegOp;
+use super::reg_var::RegVar;
 use super::shader::Shader;
 use super::spirv::Word;
 use super::spirv_type::SpirvType;
-use super::statement::Statement;
-use super::variable::Variable;
+use super::var::Var;
 use std::rc::Rc;
 
 pub trait AccessTrait {
-    fn access(&self, member: GlslStructMember) -> Result<Rc<Box<Statement>>>;
+    fn access(&self, member: GlslStructMember) -> Result<Rc<Box<Op>>>;
 }
 
-impl AccessTrait for Rc<Box<Variable>> {
-    fn access(&self, member: GlslStructMember) -> Result<Rc<Box<Statement>>> {
+impl AccessTrait for Rc<Box<Var>> {
+    fn access(&self, member: GlslStructMember) -> Result<Rc<Box<Op>>> {
         let storage_class = self.storage_class().ok_or(ErrorKind::NoStorageClass)?;
 
         Ok(Rc::new(Box::new(Access {
@@ -30,7 +30,7 @@ impl AccessTrait for Rc<Box<Variable>> {
 /// Accessing fields on structs.
 #[derive(Debug)]
 pub struct Access {
-    pub base: Rc<Box<Variable>>,
+    pub base: Rc<Box<Var>>,
     pub pointer_type: Pointer,
     pub accessed_type: Rc<SpirvType>,
     pub index: u32,
@@ -38,15 +38,15 @@ pub struct Access {
 
 #[derive(Debug)]
 pub struct RegisteredAccess {
-    pub base: Box<RegisteredVariable>,
+    pub base: Box<RegVar>,
     pub result_type: Word,
     pub pointer_type: Word,
     pub index_const: Word,
 }
 
-impl RegisteredStatement for RegisteredAccess {
-    fn statement_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
-        let base = self.base.variable_id(shader)?;
+impl RegOp for RegisteredAccess {
+    fn op_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
+        let base = self.base.var_id(shader)?;
 
         let access_id = shader.builder.access_chain(
             self.pointer_type,
@@ -67,13 +67,13 @@ impl RegisteredStatement for RegisteredAccess {
     }
 }
 
-impl Statement for Access {
-    fn statement_type(&self) -> &SpirvType {
+impl Op for Access {
+    fn op_type(&self) -> &SpirvType {
         self.accessed_type.as_ref()
     }
 
-    fn register_statement(&self, shader: &mut Shader) -> Result<Box<RegisteredStatement>> {
-        let base = self.base.register_variable(shader)?;
+    fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
+        let base = self.base.register_var(shader)?;
         let index_const = shader.constant_u32(self.index)?;
         let result_type = self.accessed_type.register_type(shader)?;
         let pointer_type = self.pointer_type.register_type(shader)?;

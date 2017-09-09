@@ -1,27 +1,27 @@
 use super::errors::*;
+use super::op::Op;
 use super::shader::Shader;
 use super::spirv::{self, Word};
 use super::spirv_type::SpirvType;
-use super::statement::Statement;
 use super::type_key::TypeKey;
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
-    statements: Vec<Rc<Box<Statement>>>,
+    ops: Vec<Rc<Box<Op>>>,
     returns: Option<Box<SpirvType>>,
 }
 
 impl Function {
     pub fn register_function(self, shader: &mut Shader) -> Result<Word> {
-        let statements = self.statements;
+        let ops = self.ops;
 
-        let statements = {
+        let ops = {
             let mut out = Vec::new();
 
-            for s in statements {
-                out.push(s.register_statement(shader)?);
+            for s in ops {
+                out.push(s.register_op(shader)?);
             }
 
             out
@@ -57,8 +57,8 @@ impl Function {
 
         let _label_start_fn = shader.builder.begin_basic_block(None)?;
 
-        for s in statements {
-            s.statement_id(shader)?;
+        for s in ops {
+            s.op_id(shader)?;
         }
 
         shader.builder.ret()?;
@@ -70,25 +70,25 @@ impl Function {
 #[derive(Debug)]
 pub struct FunctionBuilder {
     name: String,
-    statements: Vec<Rc<Box<Statement>>>,
+    ops: Vec<Rc<Box<Op>>>,
 }
 
 impl FunctionBuilder {
     pub fn new(name: &str) -> FunctionBuilder {
         FunctionBuilder {
             name: String::from(name),
-            statements: Vec::new(),
+            ops: Vec::new(),
         }
     }
 
-    pub fn statement(&mut self, statement: Rc<Box<Statement>>) {
-        self.statements.push(statement);
+    pub fn op(&mut self, op: Rc<Box<Op>>) {
+        self.ops.push(op);
     }
 
     pub fn returns_void(self) -> Function {
         Function {
             name: self.name,
-            statements: self.statements,
+            ops: self.ops,
             returns: None,
         }
     }
@@ -96,7 +96,7 @@ impl FunctionBuilder {
     pub fn returns<T: 'static + SpirvType>(self, ty: T) -> Function {
         Function {
             name: self.name,
-            statements: self.statements,
+            ops: self.ops,
             returns: Some(Box::new(ty)),
         }
     }

@@ -1,21 +1,21 @@
 use errors::*;
-use registered_statement::RegisteredStatement;
-use registered_variable::RegisteredVariable;
+use op::Op;
+use reg_op::RegOp;
+use reg_var::RegVar;
 use shader::Shader;
 use spirv::Word;
 use spirv_type::SpirvType;
-use statement::Statement;
 use std::rc::Rc;
-use variable::Variable;
+use var::Var;
 
 #[derive(Debug)]
 pub struct Store {
-    destination: Rc<Box<Variable>>,
-    source: Rc<Box<Statement>>,
+    destination: Rc<Box<Var>>,
+    source: Rc<Box<Op>>,
 }
 
 impl Store {
-    pub fn new(destination: Rc<Box<Variable>>, source: Rc<Box<Statement>>) -> Rc<Box<Statement>> {
+    pub fn new(destination: Rc<Box<Var>>, source: Rc<Box<Op>>) -> Rc<Box<Op>> {
         Rc::new(Box::new(Store {
             destination: destination,
             source: source,
@@ -23,15 +23,15 @@ impl Store {
     }
 }
 
-impl Statement for Store {
-    fn statement_type(&self) -> &SpirvType {
-        self.destination.variable_type()
+impl Op for Store {
+    fn op_type(&self) -> &SpirvType {
+        self.destination.var_type()
     }
 
-    fn register_statement(&self, shader: &mut Shader) -> Result<Box<RegisteredStatement>> {
-        let result_type = self.destination.variable_type().register_type(shader)?;
-        let destination = self.destination.register_variable(shader)?;
-        let source = self.source.register_statement(shader)?;
+    fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
+        let result_type = self.destination.var_type().register_type(shader)?;
+        let destination = self.destination.register_var(shader)?;
+        let source = self.source.register_op(shader)?;
 
         Ok(Box::new(RegisteredStore {
             result_type: result_type,
@@ -44,17 +44,15 @@ impl Statement for Store {
 #[derive(Debug)]
 pub struct RegisteredStore {
     result_type: Word,
-    destination: Box<RegisteredVariable>,
-    source: Box<RegisteredStatement>,
+    destination: Box<RegVar>,
+    source: Box<RegOp>,
 }
 
-impl RegisteredStatement for RegisteredStore {
-    fn statement_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
-        let pointer = self.destination.variable_id(shader)?;
+impl RegOp for RegisteredStore {
+    fn op_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
+        let pointer = self.destination.var_id(shader)?;
 
-        let source = self.source.statement_id(shader)?.ok_or(
-            ErrorKind::NoObjectId,
-        )?;
+        let source = self.source.op_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
 
         shader.builder.store(pointer, source, None, vec![])?;
         Ok(None)

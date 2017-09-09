@@ -1,19 +1,19 @@
 use errors::*;
-use registered_statement::RegisteredStatement;
+use op::Op;
+use reg_op::RegOp;
 use shader::Shader;
 use spirv::Word;
 use spirv_type::SpirvType;
-use statement::Statement;
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Mul {
-    lhs: Rc<Box<Statement>>,
-    rhs: Rc<Box<Statement>>,
+    lhs: Rc<Box<Op>>,
+    rhs: Rc<Box<Op>>,
 }
 
 impl Mul {
-    pub fn new(lhs: Rc<Box<Statement>>, rhs: Rc<Box<Statement>>) -> Rc<Box<Statement>> {
+    pub fn new(lhs: Rc<Box<Op>>, rhs: Rc<Box<Op>>) -> Rc<Box<Op>> {
         Rc::new(Box::new(Mul { lhs: lhs, rhs: rhs }))
     }
 }
@@ -21,14 +21,14 @@ impl Mul {
 #[derive(Debug)]
 pub struct MatrixByMatrixMul {
     result_type: Word,
-    lhs: Box<RegisteredStatement>,
-    rhs: Box<RegisteredStatement>,
+    lhs: Box<RegOp>,
+    rhs: Box<RegOp>,
 }
 
-impl RegisteredStatement for MatrixByMatrixMul {
-    fn statement_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
-        let lhs = self.lhs.statement_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
-        let rhs = self.rhs.statement_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
+impl RegOp for MatrixByMatrixMul {
+    fn op_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
+        let lhs = self.lhs.op_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
+        let rhs = self.rhs.op_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
 
         let id = shader.builder.matrix_times_matrix(
             self.result_type,
@@ -41,19 +41,19 @@ impl RegisteredStatement for MatrixByMatrixMul {
     }
 }
 
-impl Statement for Mul {
-    fn statement_type(&self) -> &SpirvType {
-        self.lhs.statement_type()
+impl Op for Mul {
+    fn op_type(&self) -> &SpirvType {
+        self.lhs.op_type()
     }
 
-    fn register_statement(&self, shader: &mut Shader) -> Result<Box<RegisteredStatement>> {
-        let result_type = self.lhs.statement_type().register_type(shader)?;
+    fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
+        let result_type = self.lhs.op_type().register_type(shader)?;
 
-        let lhs = self.lhs.register_statement(shader)?;
-        let rhs = self.rhs.register_statement(shader)?;
+        let lhs = self.lhs.register_op(shader)?;
+        let rhs = self.rhs.register_op(shader)?;
 
-        let lhs_matrix = self.lhs.statement_type().matrix_dims();
-        let rhs_matrix = self.rhs.statement_type().matrix_dims();
+        let lhs_matrix = self.lhs.op_type().matrix_dims();
+        let rhs_matrix = self.rhs.op_type().matrix_dims();
 
         if lhs_matrix.is_some() && rhs_matrix.is_some() {
             return Ok(Box::new(MatrixByMatrixMul {

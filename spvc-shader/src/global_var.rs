@@ -1,16 +1,16 @@
 use super::errors::*;
-use super::registered_variable::RegisteredVariable;
+use super::reg_var::RegVar;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{BuiltIn, Decoration, Word};
 use super::spirv_type::SpirvType;
 use super::storage_class::StorageClass;
 use super::type_key::TypeKey;
-use super::variable::Variable;
+use super::var::Var;
 use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct GlobalVariable {
+pub struct GlobalVar {
     name: String,
     storage_class: StorageClass,
     ty: Rc<SpirvType>,
@@ -20,16 +20,16 @@ pub struct GlobalVariable {
     built_in: Option<BuiltIn>,
 }
 
-impl Variable for GlobalVariable {
+impl Var for GlobalVar {
     fn storage_class(&self) -> Option<StorageClass> {
         Some(self.storage_class)
     }
 
-    fn variable_type(&self) -> &SpirvType {
+    fn var_type(&self) -> &SpirvType {
         self.ty.as_ref()
     }
 
-    fn register_variable(&self, shader: &mut Shader) -> Result<Box<RegisteredVariable>> {
+    fn register_var(&self, shader: &mut Shader) -> Result<Box<RegVar>> {
         let pointee_type = self.ty.register_type(shader)?;
 
         let variable_type = shader.register_pointer_type(
@@ -38,7 +38,7 @@ impl Variable for GlobalVariable {
         )?;
 
         let id = shader.cached_type(
-            TypeKey::GlobalVariable {
+            TypeKey::GlobalVar {
                 storage_class: self.storage_class,
                 variable_type: variable_type,
                 set: self.set.clone(),
@@ -95,13 +95,13 @@ impl Variable for GlobalVariable {
     }
 }
 
-impl GlobalVariable {
+impl GlobalVar {
     pub fn new<T: 'static + SpirvType>(
         name: &str,
         ty: T,
         storage_class: StorageClass,
-    ) -> GlobalVariable {
-        GlobalVariable {
+    ) -> GlobalVar {
+        GlobalVar {
             name: String::from(name),
             storage_class: storage_class,
             ty: Rc::new(ty),
@@ -112,8 +112,8 @@ impl GlobalVariable {
         }
     }
 
-    pub fn with_set(self, set: u32) -> GlobalVariable {
-        GlobalVariable {
+    pub fn with_set(self, set: u32) -> GlobalVar {
+        GlobalVar {
             name: self.name,
             storage_class: self.storage_class,
             ty: self.ty,
@@ -124,8 +124,8 @@ impl GlobalVariable {
         }
     }
 
-    pub fn with_binding(self, binding: u32) -> GlobalVariable {
-        GlobalVariable {
+    pub fn with_binding(self, binding: u32) -> GlobalVar {
+        GlobalVar {
             name: self.name,
             storage_class: self.storage_class,
             ty: self.ty,
@@ -136,8 +136,8 @@ impl GlobalVariable {
         }
     }
 
-    pub fn with_location(self, location: u32) -> GlobalVariable {
-        GlobalVariable {
+    pub fn with_location(self, location: u32) -> GlobalVar {
+        GlobalVar {
             name: self.name,
             storage_class: self.storage_class,
             ty: self.ty,
@@ -148,8 +148,8 @@ impl GlobalVariable {
         }
     }
 
-    pub fn with_built_in(self, built_in: BuiltIn) -> GlobalVariable {
-        GlobalVariable {
+    pub fn with_built_in(self, built_in: BuiltIn) -> GlobalVar {
+        GlobalVar {
             name: self.name,
             storage_class: self.storage_class,
             ty: self.ty,
@@ -160,12 +160,12 @@ impl GlobalVariable {
         }
     }
 
-    pub fn build(self) -> Rc<Box<Variable>> {
+    pub fn build(self) -> Rc<Box<Var>> {
         Rc::new(Box::new(self))
     }
 }
 
-impl SpirvType for GlobalVariable {
+impl SpirvType for GlobalVar {
     fn register_type(&self, shader: &mut Shader) -> Result<Word> {
         let pointee_type = self.ty.register_type(shader)?;
         shader.register_pointer_type(self.storage_class, pointee_type)

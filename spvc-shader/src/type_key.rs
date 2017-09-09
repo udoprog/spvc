@@ -28,7 +28,7 @@ pub enum TypeKey {
         return_type: Word,
         parameter_types: Vec<Word>,
     },
-    GlobalVariable {
+    GlobalVar {
         storage_class: StorageClass,
         variable_type: Word,
         set: Option<u32>,
