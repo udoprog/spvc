@@ -27,11 +27,13 @@ impl AccessTrait for Rc<Box<Op>> {
 
         access_chain.push(member.index);
 
+        let member_type = Rc::new(member.ty);
+
         Ok(Rc::new(Box::new(Access {
             base: base,
             storage_class: storage_class,
-            pointer_type: Pointer(storage_class, member.ty.clone()),
-            accessed_type: member.ty.clone(),
+            pointer_type: Pointer::new(storage_class, member_type.clone()),
+            accessed_type: member_type.clone(),
             access_chain: access_chain,
         })))
     }
@@ -43,7 +45,7 @@ pub struct Access {
     pub base: Rc<Box<Op>>,
     pub storage_class: StorageClass,
     pub pointer_type: Pointer,
-    pub accessed_type: Rc<SpirvType>,
+    pub accessed_type: Rc<Box<SpirvType>>,
     pub access_chain: Vec<u32>,
 }
 
@@ -59,19 +61,11 @@ impl RegOp for RegisteredAccess {
     fn op_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
         let base = self.base.op_id(shader)?.ok_or(ErrorKind::NoBase)?;
 
-        let access_id = shader.builder.access_chain(
+        let id = shader.builder.access_chain(
             self.pointer_type,
             None,
             base,
             self.access_chain.clone(),
-        )?;
-
-        let id = shader.builder.load(
-            self.result_type,
-            None,
-            access_id,
-            None,
-            vec![],
         )?;
 
         Ok(Some(id))
@@ -92,7 +86,7 @@ impl Op for Access {
     }
 
     fn op_type(&self) -> &SpirvType {
-        self.accessed_type.as_ref()
+        &self.pointer_type
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {

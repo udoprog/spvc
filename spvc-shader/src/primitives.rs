@@ -5,6 +5,7 @@ use super::shader::Shader;
 use super::spirv::{Decoration, Word};
 use super::spirv_type::SpirvType;
 use super::type_key::TypeKey;
+use super::vector_dims::VectorDims;
 use std::rc::Rc;
 
 #[derive(Debug, Clone, Copy)]
@@ -86,6 +87,10 @@ impl SpirvType for Vector {
     fn row_count(&self) -> Option<u32> {
         Some(self.component_count)
     }
+
+    fn as_vector_dims(&self) -> Option<VectorDims> {
+        Some(VectorDims::new(self.component_count))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -106,7 +111,15 @@ impl Matrix {
 impl SpirvType for Matrix {
     fn matrix_times_matrix(&self, rhs: &SpirvType) -> Result<Option<Matrix>> {
         if let (Some(lhs_dims), Some(rhs_dims)) = (self.as_matrix_dims(), rhs.as_matrix_dims()) {
-            return lhs_dims.mul_type(rhs_dims).map(Some);
+            return lhs_dims.matrix_mul_type(rhs_dims).map(Some);
+        }
+
+        Ok(None)
+    }
+
+    fn matrix_times_vector(&self, rhs: &SpirvType) -> Result<Option<Vector>> {
+        if let (Some(lhs_dims), Some(rhs_dims)) = (self.as_matrix_dims(), rhs.as_vector_dims()) {
+            return lhs_dims.vector_mul_type(rhs_dims).map(Some);
         }
 
         Ok(None)

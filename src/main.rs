@@ -69,16 +69,11 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
         let camera = global.access_member(Global::camera())?;
         let view = global.access_member(Global::view())?;
 
-        let worldview = mul(view, camera.clone())?;
+        let worldview = mul(load(view)?, load(camera.clone())?)?;
 
-        main.op(Store::new(gl_position.clone(), Load::new(position.clone())));
-
-        main.op(Store::new(
-            v_tex_coord.clone(),
-            Load::new(tex_coord.clone()),
-        ));
-
-        main.op(Store::new(v_normal.clone(), Transpose::new(worldview)?));
+        main.op(store(gl_position.clone(), load(position.clone())?)?);
+        main.op(store(v_tex_coord.clone(), load(tex_coord.clone())?)?);
+        main.op(store(v_normal.clone(), transpose(worldview)?)?);
 
         shader.vertex_entry_point(
             main.returns_void(),

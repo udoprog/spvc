@@ -14,23 +14,21 @@ pub struct Transpose {
 }
 
 /// Reflects a transpose operation.
-impl Transpose {
-    pub fn new(matrix: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
-        // Expect a transposable matrix as argument type.
-        let op_type = matrix
-            .op_type()
-            .as_matrix_dims()
-            .ok_or(ErrorKind::ExpectedMatrix(
-                "transpose",
-                matrix.op_type().display(),
-            ))?
-            .transpose_type()?;
+pub fn transpose(matrix: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
+    // Expect a transposable matrix as argument type.
+    let op_type = matrix
+        .op_type()
+        .as_matrix_dims()
+        .ok_or(ErrorKind::ExpectedMatrix(
+            "transpose",
+            matrix.op_type().display(),
+        ))?
+        .transpose_type()?;
 
-        Ok(Rc::new(Box::new(Transpose {
-            op_type: op_type,
-            matrix: matrix,
-        })))
-    }
+    Ok(Rc::new(Box::new(Transpose {
+        op_type: op_type,
+        matrix: matrix,
+    })))
 }
 
 impl Op for Transpose {

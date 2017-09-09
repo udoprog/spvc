@@ -48,7 +48,7 @@ fn impl_glsl_member(field: &Field) -> quote::Tokens {
         fn #ident() -> spvc_shader::glsl_struct_member::GlslStructMember  {
             spvc_shader::glsl_struct_member::GlslStructMember {
                 name: stringify!(#ident),
-                ty: ::std::rc::Rc::new(#type_builder),
+                ty: Box::new(#type_builder),
                 index: #index,
             }
         }

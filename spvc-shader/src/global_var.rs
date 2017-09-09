@@ -1,5 +1,6 @@
 use super::errors::*;
 use super::op::Op;
+use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
@@ -13,7 +14,7 @@ use std::rc::Rc;
 pub struct GlobalVar {
     name: String,
     storage_class: StorageClass,
-    ty: Rc<SpirvType>,
+    ty: Pointer,
     set: Option<u32>,
     binding: Option<u32>,
     location: Option<u32>,
@@ -26,16 +27,11 @@ impl Op for GlobalVar {
     }
 
     fn op_type(&self) -> &SpirvType {
-        self.ty.as_ref()
+        &self.ty
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
-        let pointee_type = self.ty.register_type(shader)?;
-
-        let variable_type = shader.register_pointer_type(
-            self.storage_class,
-            pointee_type,
-        )?;
+        let variable_type = self.ty.register_type(shader)?;
 
         let id = shader.cached_type(
             TypeKey::GlobalVar {
@@ -104,7 +100,7 @@ impl GlobalVar {
         GlobalVar {
             name: String::from(name),
             storage_class: storage_class,
-            ty: Rc::new(ty),
+            ty: Pointer::new(storage_class, Rc::new(Box::new(ty))),
             set: None,
             binding: None,
             location: None,

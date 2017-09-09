@@ -1,5 +1,6 @@
 use errors::*;
 use op::Op;
+use pointer::Pointer;
 use reg_op::RegOp;
 use shader::Shader;
 use spirv::Word;
@@ -8,32 +9,39 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Store {
-    destination: Rc<Box<Op>>,
+    dest: Rc<Box<Op>>,
+    dest_type: Pointer,
     source: Rc<Box<Op>>,
 }
 
-impl Store {
-    pub fn new(destination: Rc<Box<Op>>, source: Rc<Box<Op>>) -> Rc<Box<Op>> {
-        Rc::new(Box::new(Store {
-            destination: destination,
-            source: source,
-        }))
-    }
+pub fn store(dest: Rc<Box<Op>>, source: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
+    let dest_type = dest.op_type().as_pointer().ok_or(
+        ErrorKind::ExpectedPointer(
+            "load",
+            source.op_type().display(),
+        ),
+    )?;
+
+    Ok(Rc::new(Box::new(Store {
+        dest: dest,
+        dest_type: dest_type,
+        source: source,
+    })))
 }
 
 impl Op for Store {
     fn op_type(&self) -> &SpirvType {
-        self.destination.op_type()
+        self.dest.op_type()
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
-        let result_type = self.destination.op_type().register_type(shader)?;
-        let destination = self.destination.register_op(shader)?;
+        let result_type = self.dest.op_type().register_type(shader)?;
+        let dest = self.dest.register_op(shader)?;
         let source = self.source.register_op(shader)?;
 
         Ok(Box::new(RegisteredStore {
             result_type: result_type,
-            destination: destination,
+            dest: dest,
             source: source,
         }))
     }
@@ -42,13 +50,13 @@ impl Op for Store {
 #[derive(Debug)]
 pub struct RegisteredStore {
     result_type: Word,
-    destination: Box<RegOp>,
+    dest: Box<RegOp>,
     source: Box<RegOp>,
 }
 
 impl RegOp for RegisteredStore {
     fn op_id(&self, shader: &mut Shader) -> Result<Option<Word>> {
-        let pointer = self.destination.op_id(shader)?.ok_or(ErrorKind::NoOp)?;
+        let pointer = self.dest.op_id(shader)?.ok_or(ErrorKind::NoOp)?;
         let source = self.source.op_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
 
         shader.builder.store(pointer, source, None, vec![])?;

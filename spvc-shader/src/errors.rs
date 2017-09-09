@@ -1,4 +1,5 @@
 use super::matrix_dims::MatrixDims;
+use super::vector_dims::VectorDims;
 use rspirv;
 
 error_chain! {
@@ -26,13 +27,19 @@ error_chain! {
         BadArgument {
         }
 
-        MulMismatch {
+        MatrixTimesMatrixMismatch(lhs: MatrixDims, rhs: MatrixDims) {
         }
 
-        MatrixMulMismatch(lhs: MatrixDims, rhs: MatrixDims) {
+        MatrixTimesVectorMismatch(lhs: MatrixDims, rhs: VectorDims) {
         }
 
         ExpectedMatrix(op: &'static str, actual: String) {
+        }
+
+        ExpectedPointer(op: &'static str, actual: String) {
+        }
+
+        ArgumentMismatch(op: &'static str, arguments: Vec<String>) {
         }
     }
 }
