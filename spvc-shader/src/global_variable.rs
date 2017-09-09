@@ -1,13 +1,11 @@
-use super::access::Access;
 use super::errors::*;
-use super::glsl_struct_member::GlslStructMember;
-use super::pointer::Pointer;
 use super::registered_variable::RegisteredVariable;
+use super::rspirv::mr::Operand;
 use super::shader::Shader;
-use super::spirv::Word;
+use super::spirv::{BuiltIn, Decoration, Word};
 use super::spirv_type::SpirvType;
-use super::statement::Statement;
 use super::storage_class::StorageClass;
+use super::type_key::TypeKey;
 use super::variable::Variable;
 use std::rc::Rc;
 
@@ -19,16 +17,78 @@ pub struct GlobalVariable {
     set: Option<u32>,
     binding: Option<u32>,
     location: Option<u32>,
+    built_in: Option<BuiltIn>,
 }
 
 impl Variable for GlobalVariable {
+    fn storage_class(&self) -> Option<StorageClass> {
+        Some(self.storage_class)
+    }
+
+    fn variable_type(&self) -> &SpirvType {
+        self.ty.as_ref()
+    }
+
     fn register_variable(&self, shader: &mut Shader) -> Result<Box<RegisteredVariable>> {
-        let id = shader.global_variable(
+        let pointee_type = self.ty.register_type(shader)?;
+
+        let variable_type = shader.register_pointer_type(
             self.storage_class,
-            self.ty.as_ref(),
-            self.set,
-            self.binding,
-            self.location,
+            pointee_type,
+        )?;
+
+        let id = shader.cached_type(
+            TypeKey::GlobalVariable {
+                storage_class: self.storage_class,
+                variable_type: variable_type,
+                set: self.set.clone(),
+                binding: self.binding.clone(),
+                location: self.location.clone(),
+            },
+            |s| {
+                let variable_id = s.builder.variable(
+                    variable_type,
+                    None,
+                    self.storage_class.into(),
+                    None,
+                );
+
+                s.name(variable_id, self.name.as_str());
+
+                if let Some(set) = self.set {
+                    s.builder.decorate(
+                        variable_id,
+                        Decoration::DescriptorSet,
+                        vec![Operand::LiteralInt32(set)],
+                    );
+                }
+
+                if let Some(binding) = self.binding {
+                    s.builder.decorate(
+                        variable_id,
+                        Decoration::Binding,
+                        vec![Operand::LiteralInt32(binding)],
+                    );
+                }
+
+                if let Some(location) = self.location {
+                    s.builder.decorate(
+                        variable_id,
+                        Decoration::Location,
+                        vec![Operand::LiteralInt32(location)],
+                    );
+                }
+
+                if let Some(built_in) = self.built_in {
+                    s.builder.decorate(
+                        variable_id,
+                        Decoration::BuiltIn,
+                        vec![Operand::BuiltIn(built_in)],
+                    );
+                }
+
+                Ok(variable_id)
+            },
         )?;
 
         Ok(Box::new(id))
@@ -48,6 +108,7 @@ impl GlobalVariable {
             set: None,
             binding: None,
             location: None,
+            built_in: None,
         }
     }
 
@@ -59,6 +120,7 @@ impl GlobalVariable {
             set: Some(set),
             binding: self.binding,
             location: self.location,
+            built_in: self.built_in,
         }
     }
 
@@ -70,6 +132,7 @@ impl GlobalVariable {
             set: self.set,
             binding: Some(binding),
             location: self.location,
+            built_in: self.built_in,
         }
     }
 
@@ -81,25 +144,24 @@ impl GlobalVariable {
             set: self.set,
             binding: self.binding,
             location: Some(location),
+            built_in: self.built_in,
         }
     }
 
-    pub fn access(&self, member: GlslStructMember) -> Rc<Box<Statement>> {
-        let base = GlobalVariable {
-            name: self.name.clone(),
+    pub fn with_built_in(self, built_in: BuiltIn) -> GlobalVariable {
+        GlobalVariable {
+            name: self.name,
             storage_class: self.storage_class,
-            ty: self.ty.clone(),
+            ty: self.ty,
             set: self.set,
             binding: self.binding,
             location: self.location,
-        };
+            built_in: Some(built_in),
+        }
+    }
 
-        Rc::new(Box::new(Access {
-            base: base,
-            pointer_type: Pointer(self.storage_class, member.ty.clone()),
-            accessed_type: member.ty.clone(),
-            index: member.index,
-        }))
+    pub fn build(self) -> Rc<Box<Variable>> {
+        Rc::new(Box::new(self))
     }
 }
 

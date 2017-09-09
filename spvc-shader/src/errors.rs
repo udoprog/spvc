@@ -8,5 +8,8 @@ error_chain! {
     errors {
         MissingType {
         }
+
+        NoStorageClass {
+        }
     }
 }

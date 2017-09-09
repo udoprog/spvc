@@ -1,9 +1,9 @@
-use super::errors::*;
-use super::registered_statement::RegisteredStatement;
-use super::shader::Shader;
-use super::spirv::Word;
-use super::spirv_type::SpirvType;
-use super::statement::Statement;
+use errors::*;
+use registered_statement::RegisteredStatement;
+use shader::Shader;
+use spirv::Word;
+use spirv_type::SpirvType;
+use statement::Statement;
 use std::rc::Rc;
 
 #[derive(Debug)]

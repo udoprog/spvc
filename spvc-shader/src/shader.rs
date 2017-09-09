@@ -2,14 +2,14 @@ use super::errors::*;
 use super::function::Function;
 use super::primitives::UnsignedInteger;
 use super::rspirv;
-use super::rspirv::mr::Operand;
-use super::spirv::{Decoration, ExecutionModel, Word};
+use super::spirv::{ExecutionModel, Word};
 use super::spirv_type::SpirvType;
 use super::storage_class::StorageClass;
 use super::type_key::TypeKey;
 use super::variable::Variable;
 use std::collections::HashMap;
 use std::fmt;
+use std::rc::Rc;
 
 pub struct Shader {
     /// Internal builder
@@ -96,72 +96,16 @@ impl Shader {
         self.builder.name(id, name.to_string());
     }
 
-    pub(crate) fn global_variable(
-        &mut self,
-        storage_class: StorageClass,
-        result_type: &SpirvType,
-        set: Option<u32>,
-        binding: Option<u32>,
-        location: Option<u32>,
-    ) -> Result<Word> {
-        let pointee_type = result_type.register_type(self)?;
-        let variable_type = self.register_pointer_type(storage_class, pointee_type)?;
-
-        self.cached_type(
-            TypeKey::GlobalVariable {
-                storage_class: storage_class,
-                variable_type: variable_type,
-                set: set.clone(),
-                binding: binding.clone(),
-                location: location.clone(),
-            },
-            |s| {
-                let variable_id = s.builder.variable(
-                    variable_type,
-                    None,
-                    storage_class.into(),
-                    None,
-                );
-
-                if let Some(set) = set {
-                    s.builder.decorate(
-                        variable_id,
-                        Decoration::DescriptorSet,
-                        vec![Operand::LiteralInt32(set)],
-                    );
-                }
-
-                if let Some(binding) = binding {
-                    s.builder.decorate(
-                        variable_id,
-                        Decoration::Binding,
-                        vec![Operand::LiteralInt32(binding)],
-                    );
-                }
-
-                if let Some(location) = location {
-                    s.builder.decorate(
-                        variable_id,
-                        Decoration::Location,
-                        vec![Operand::LiteralInt32(location)],
-                    );
-                }
-
-                Ok(variable_id)
-            },
-        )
-    }
-
     pub fn vertex_entry_point(
         &mut self,
         function: Function,
-        interface: Vec<&Variable>,
+        interface: Vec<Rc<Box<Variable>>>,
     ) -> Result<()> {
         let interface = {
             let mut out = Vec::new();
 
             for i in interface {
-                out.push(i.register_variable(self)?.variable_id()?);
+                out.push(i.register_variable(self)?.variable_id(self)?);
             }
 
             out

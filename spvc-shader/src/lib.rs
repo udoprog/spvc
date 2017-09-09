@@ -25,9 +25,10 @@ pub type GlslVec4 = [f32; 4];
 pub type GlslMat4 = [GlslVec4; 4];
 pub type GlslBool = u32;
 
+pub use self::access::AccessTrait;
 pub use self::function::FunctionBuilder;
 pub use self::global_variable::GlobalVariable;
-pub use self::ops::Mul;
+pub use self::ops::{Load, Mul, Store};
 pub use self::primitives::Bool;
 pub use self::primitives::Float;
 pub use self::primitives::Matrix;

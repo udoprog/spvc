@@ -6,6 +6,7 @@ extern crate glsl_struct_derive;
 
 use self::rspirv::binary::Assemble;
 use self::rspirv::binary::Disassemble;
+use self::spirv::BuiltIn;
 use self::spvc_shader::*;
 use self::spvc_shader::errors::*;
 use std::fs::File;
@@ -35,26 +36,47 @@ pub struct Global {
 fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
     let mut shader = Shader::new();
 
-    let model = GlobalVariable::new("model", Model::glsl_struct(), StorageClass::Uniform);
-    let global = GlobalVariable::new("global", Global::glsl_struct(), StorageClass::Uniform);
+    let model = GlobalVariable::new("model", Model::glsl_struct(), StorageClass::Uniform).build();
 
-    let position = GlobalVariable::new("location", vec3(), StorageClass::Input).with_location(0);
-    let normal = GlobalVariable::new("normal", vec3(), StorageClass::Input).with_location(1);
-    let tex_coord = GlobalVariable::new("tex_coord", vec2(), StorageClass::Input).with_location(2);
+    let global = GlobalVariable::new("global", Global::glsl_struct(), StorageClass::Uniform)
+        .build();
+
+    let position = GlobalVariable::new("location", vec3(), StorageClass::Input)
+        .with_location(0)
+        .build();
+
+    let normal = GlobalVariable::new("normal", vec3(), StorageClass::Input)
+        .with_location(1)
+        .build();
+
+    let tex_coord = GlobalVariable::new("tex_coord", vec2(), StorageClass::Input)
+        .with_location(2)
+        .build();
+
+    let gl_position = GlobalVariable::new("gl_Position", vec3(), StorageClass::Output)
+        .with_built_in(BuiltIn::Position)
+        .build();
 
     {
         let mut main = FunctionBuilder::new("main");
-        let camera = global.access(Global::camera());
-        let view = global.access(Global::view());
+        let camera = global.access(Global::camera())?;
+        let view = global.access(Global::view())?;
 
         let cameraview = Mul::new(camera.clone(), view);
         let again = Mul::new(camera.clone(), cameraview.clone());
 
+        let loaded_position = Load::new(position.clone());
+
         main.statement(again);
+        main.statement(Store::new(gl_position, loaded_position));
 
         shader.vertex_entry_point(
             main.returns_void(),
-            vec![&position, &normal, &tex_coord],
+            vec![
+                position.clone(),
+                normal.clone(),
+                tex_coord.clone(),
+            ],
         )?;
     }
 

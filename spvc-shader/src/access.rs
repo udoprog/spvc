@@ -1,4 +1,5 @@
 use super::errors::*;
+use super::glsl_struct_member::GlslStructMember;
 use super::pointer::Pointer;
 use super::registered_statement::RegisteredStatement;
 use super::registered_variable::RegisteredVariable;
@@ -9,10 +10,27 @@ use super::statement::Statement;
 use super::variable::Variable;
 use std::rc::Rc;
 
+pub trait AccessTrait {
+    fn access(&self, member: GlslStructMember) -> Result<Rc<Box<Statement>>>;
+}
+
+impl AccessTrait for Rc<Box<Variable>> {
+    fn access(&self, member: GlslStructMember) -> Result<Rc<Box<Statement>>> {
+        let storage_class = self.storage_class().ok_or(ErrorKind::NoStorageClass)?;
+
+        Ok(Rc::new(Box::new(Access {
+            base: self.clone(),
+            pointer_type: Pointer(storage_class, member.ty.clone()),
+            accessed_type: member.ty.clone(),
+            index: member.index,
+        })))
+    }
+}
+
 /// Accessing fields on structs.
 #[derive(Debug)]
-pub struct Access<B> {
-    pub base: B,
+pub struct Access {
+    pub base: Rc<Box<Variable>>,
     pub pointer_type: Pointer,
     pub accessed_type: Rc<SpirvType>,
     pub index: u32,
@@ -28,7 +46,7 @@ pub struct RegisteredAccess {
 
 impl RegisteredStatement for RegisteredAccess {
     fn statement_id(&self, shader: &mut Shader) -> Result<Word> {
-        let base = self.base.variable_id()?;
+        let base = self.base.variable_id(shader)?;
 
         let access_id = shader.builder.access_chain(
             self.pointer_type,
@@ -49,7 +67,7 @@ impl RegisteredStatement for RegisteredAccess {
     }
 }
 
-impl<B: Variable> Statement for Access<B> {
+impl Statement for Access {
     fn statement_type(&self) -> &SpirvType {
         self.accessed_type.as_ref()
     }
