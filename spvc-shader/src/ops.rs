@@ -7,14 +7,14 @@ use super::statement::Statement;
 use std::rc::Rc;
 
 #[derive(Debug)]
-pub struct Mul<L, R> {
-    lhs: L,
-    rhs: R,
+pub struct Mul {
+    lhs: Rc<Box<Statement>>,
+    rhs: Rc<Box<Statement>>,
 }
 
-impl<L, R> Mul<L, R> {
-    pub fn new(lhs: L, rhs: R) -> Mul<L, R> {
-        Mul { lhs: lhs, rhs: rhs }
+impl Mul {
+    pub fn new(lhs: Rc<Box<Statement>>, rhs: Rc<Box<Statement>>) -> Rc<Box<Statement>> {
+        Rc::new(Box::new(Mul { lhs: lhs, rhs: rhs }))
     }
 }
 
@@ -41,7 +41,7 @@ impl RegisteredStatement for MatrixByMatrixMul {
     }
 }
 
-impl Statement for Mul<Rc<Box<Statement>>, Rc<Box<Statement>>> {
+impl Statement for Mul {
     fn statement_type(&self) -> &SpirvType {
         self.lhs.statement_type()
     }

@@ -33,13 +33,7 @@ pub use self::primitives::Float;
 pub use self::primitives::Matrix;
 pub use self::primitives::Vector;
 pub use self::shader::Shader;
-use self::statement::Statement;
 pub use self::storage_class::StorageClass;
-use std::rc::Rc;
-
-pub fn mul(lhs: Rc<Box<Statement>>, rhs: Rc<Box<Statement>>) -> Rc<Box<Statement>> {
-    Rc::new(Box::new(Mul::new(lhs, rhs)))
-}
 
 /// Corresponds to the GLSL type vec2.
 pub fn vec2() -> Vector {

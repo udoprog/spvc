@@ -47,8 +47,8 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
         let camera = global.access(Global::camera());
         let view = global.access(Global::view());
 
-        let cameraview = mul(camera.clone(), view);
-        let again = mul(camera.clone(), cameraview.clone());
+        let cameraview = Mul::new(camera.clone(), view);
+        let again = Mul::new(camera.clone(), cameraview.clone());
 
         main.statement(again);
 
