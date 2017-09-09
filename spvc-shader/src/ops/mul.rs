@@ -1,5 +1,6 @@
 use errors::*;
 use op::Op;
+use primitives::Matrix;
 use reg_op::RegOp;
 use shader::Shader;
 use spirv::Word;
@@ -7,14 +8,12 @@ use spirv_type::SpirvType;
 use std::rc::Rc;
 
 pub fn mul(lhs: Rc<Box<Op>>, rhs: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
-    if let (Some(lhs_dims), Some(rhs_dims)) =
-        (lhs.op_type().matrix_dims(), rhs.op_type().matrix_dims())
-    {
-        if lhs_dims.cols != rhs_dims.rows {
-            return Err(ErrorKind::MatrixMulMismatch(lhs_dims, rhs_dims).into());
-        }
-
-        return Ok(Rc::new(Box::new(MatrixByMatrixMul { lhs: lhs, rhs: rhs })));
+    if let Some(op_type) = lhs.op_type().matrix_times_matrix(rhs.op_type())? {
+        return Ok(Rc::new(Box::new(MatrixByMatrixMul {
+            op_type: op_type,
+            lhs: lhs,
+            rhs: rhs,
+        })));
     }
 
     Err(ErrorKind::MulMismatch.into())
@@ -45,13 +44,14 @@ impl RegOp for MatrixByMatrixRegMul {
 
 #[derive(Debug)]
 pub struct MatrixByMatrixMul {
+    op_type: Matrix,
     lhs: Rc<Box<Op>>,
     rhs: Rc<Box<Op>>,
 }
 
 impl Op for MatrixByMatrixMul {
     fn op_type(&self) -> &SpirvType {
-        self.lhs.op_type()
+        &self.op_type
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {

@@ -13,6 +13,7 @@ mod reg_op;
 mod shader;
 mod spirv_type;
 mod op;
+mod matrix_dims;
 mod storage_class;
 mod type_key;
 pub mod errors;
@@ -52,10 +53,4 @@ pub fn vec4() -> Vector {
 /// Corresponds to the GLSL type mat4.
 pub fn mat4() -> Matrix {
     Matrix::new(Vector::new(Float, 4), 4)
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct MatrixDims {
-    rows: u32,
-    cols: u32,
 }

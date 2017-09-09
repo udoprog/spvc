@@ -78,16 +78,17 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
             Load::new(tex_coord.clone()),
         ));
 
-        let n = Load::new(normal.clone());
-        Store::new(v_normal, Transpose::new(n));
+        main.op(Store::new(v_normal.clone(), Transpose::new(worldview)?));
 
         shader.vertex_entry_point(
             main.returns_void(),
             vec![
-                gl_position.clone(),
                 position.clone(),
                 normal.clone(),
                 tex_coord.clone(),
+                gl_position.clone(),
+                v_normal.clone(),
+                v_tex_coord.clone(),
             ],
         )?;
     }

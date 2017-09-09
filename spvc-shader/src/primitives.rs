@@ -1,5 +1,5 @@
-use super::MatrixDims;
 use super::errors::*;
+use super::matrix_dims::MatrixDims;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{Decoration, Word};
@@ -104,6 +104,14 @@ impl Matrix {
 }
 
 impl SpirvType for Matrix {
+    fn matrix_times_matrix(&self, rhs: &SpirvType) -> Result<Option<Matrix>> {
+        if let (Some(lhs_dims), Some(rhs_dims)) = (self.as_matrix_dims(), rhs.as_matrix_dims()) {
+            return lhs_dims.mul_type(rhs_dims).map(Some);
+        }
+
+        Ok(None)
+    }
+
     fn register_type(&self, shader: &mut Shader) -> Result<Word> {
         let column_type = self.column_type.register_type(shader)?;
 
@@ -140,12 +148,9 @@ impl SpirvType for Matrix {
         self.column_type.width() * self.column_count
     }
 
-    fn matrix_dims(&self) -> Option<MatrixDims> {
+    fn as_matrix_dims(&self) -> Option<MatrixDims> {
         return self.column_type.row_count().map(|row_count| {
-            MatrixDims {
-                cols: self.column_count,
-                rows: row_count,
-            }
+            MatrixDims::new(self.column_count, row_count)
         });
     }
 }

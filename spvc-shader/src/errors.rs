@@ -1,4 +1,4 @@
-use super::MatrixDims;
+use super::matrix_dims::MatrixDims;
 use rspirv;
 
 error_chain! {
@@ -30,6 +30,9 @@ error_chain! {
         }
 
         MatrixMulMismatch(lhs: MatrixDims, rhs: MatrixDims) {
+        }
+
+        ExpectedMatrix(op: &'static str, actual: String) {
         }
     }
 }
