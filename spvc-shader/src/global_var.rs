@@ -1,12 +1,12 @@
 use super::errors::*;
-use super::reg_var::RegVar;
+use super::op::Op;
+use super::reg_op::RegOp;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{BuiltIn, Decoration, Word};
 use super::spirv_type::SpirvType;
 use super::storage_class::StorageClass;
 use super::type_key::TypeKey;
-use super::var::Var;
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -20,16 +20,16 @@ pub struct GlobalVar {
     built_in: Option<BuiltIn>,
 }
 
-impl Var for GlobalVar {
+impl Op for GlobalVar {
     fn storage_class(&self) -> Option<StorageClass> {
         Some(self.storage_class)
     }
 
-    fn var_type(&self) -> &SpirvType {
+    fn op_type(&self) -> &SpirvType {
         self.ty.as_ref()
     }
 
-    fn register_var(&self, shader: &mut Shader) -> Result<Box<RegVar>> {
+    fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
         let pointee_type = self.ty.register_type(shader)?;
 
         let variable_type = shader.register_pointer_type(
@@ -160,7 +160,7 @@ impl GlobalVar {
         }
     }
 
-    pub fn build(self) -> Rc<Box<Var>> {
+    pub fn build(self) -> Rc<Box<Op>> {
         Rc::new(Box::new(self))
     }
 }

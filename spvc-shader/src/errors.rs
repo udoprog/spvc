@@ -9,6 +9,12 @@ error_chain! {
         MissingType {
         }
 
+        NoBase {
+        }
+
+        NoOp {
+        }
+
         NoStorageClass {
         }
 

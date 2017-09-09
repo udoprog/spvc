@@ -58,8 +58,8 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
 
     {
         let mut main = FunctionBuilder::new("main");
-        let camera = global.access(Global::camera())?;
-        let view = global.access(Global::view())?;
+        let camera = global.access_member(Global::camera())?;
+        let view = global.access_member(Global::view())?;
 
         let cameraview = Mul::new(camera.clone(), view);
         let again = Mul::new(camera.clone(), cameraview.clone());
@@ -67,11 +67,12 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
         let loaded_position = Load::new(position.clone());
 
         main.op(again);
-        main.op(Store::new(gl_position, loaded_position));
+        main.op(Store::new(gl_position.clone(), loaded_position));
 
         shader.vertex_entry_point(
             main.returns_void(),
             vec![
+                gl_position.clone(),
                 position.clone(),
                 normal.clone(),
                 tex_coord.clone(),

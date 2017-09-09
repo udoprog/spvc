@@ -1,12 +1,12 @@
 use super::errors::*;
 use super::function::Function;
+use super::op::Op;
 use super::primitives::UnsignedInteger;
 use super::rspirv;
 use super::spirv::{ExecutionModel, Word};
 use super::spirv_type::SpirvType;
 use super::storage_class::StorageClass;
 use super::type_key::TypeKey;
-use super::var::Var;
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
@@ -99,13 +99,13 @@ impl Shader {
     pub fn vertex_entry_point(
         &mut self,
         function: Function,
-        interface: Vec<Rc<Box<Var>>>,
+        interface: Vec<Rc<Box<Op>>>,
     ) -> Result<()> {
         let interface = {
             let mut out = Vec::new();
 
             for i in interface {
-                out.push(i.register_var(self)?.var_id(self)?);
+                out.push(i.register_op(self)?.op_id(self)?.ok_or(ErrorKind::NoOp)?);
             }
 
             out

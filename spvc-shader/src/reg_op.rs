@@ -9,3 +9,9 @@ pub trait RegOp: fmt::Debug {
     /// Using the object ID tends to destroy it.
     fn op_id(&self, shader: &mut Shader) -> Result<Option<Word>>;
 }
+
+impl RegOp for Word {
+    fn op_id(&self, _: &mut Shader) -> Result<Option<Word>> {
+        Ok(Some(*self))
+    }
+}
