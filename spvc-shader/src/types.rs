@@ -4,9 +4,46 @@ use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{Decoration, Word};
 use super::spirv_type::SpirvType;
+use super::struct_member::StructMember;
 use super::type_key::TypeKey;
 use super::vector_dims::VectorDims;
 use std::rc::Rc;
+
+/// Types which are used as fields for automatic structs.
+pub mod st {
+    pub type Vec2 = [f32; 2];
+    pub type Vec3 = [f32; 3];
+    pub type Vec4 = [f32; 4];
+    pub type Mat3 = [Vec3; 3];
+    pub type Mat4 = [Vec4; 4];
+    pub type Float = f32;
+    pub type Bool = u32;
+}
+
+/// Corresponds to the GLSL type vec2.
+pub fn vec2() -> Vector {
+    Vector::new(Float, 3)
+}
+
+/// Corresponds to the GLSL type vec3.
+pub fn vec3() -> Vector {
+    Vector::new(Float, 3)
+}
+
+/// Corresponds to the GLSL type vec4.
+pub fn vec4() -> Vector {
+    Vector::new(Float, 4)
+}
+
+/// Corresponds to the GLSL type mat3.
+pub fn mat3() -> Matrix {
+    Matrix::new(Vector::new(Float, 3), 3)
+}
+
+/// Corresponds to the GLSL type mat4.
+pub fn mat4() -> Matrix {
+    Matrix::new(Vector::new(Float, 4), 4)
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Float;
@@ -235,5 +272,83 @@ impl SpirvType for Matrix {
 
     fn display(&self) -> String {
         format!("mat{}[{}]", self.column_count, self.column_type.display())
+    }
+}
+
+#[derive(Debug)]
+pub struct Struct {
+    pub name: &'static str,
+    pub members: Vec<Rc<StructMember>>,
+}
+
+impl SpirvType for Struct {
+    fn register_type(&self, shader: &mut Shader) -> Result<Word> {
+        let mut field_types: Vec<Word> = Vec::new();
+
+        for m in &self.members {
+            field_types.push(m.ty.register_type(shader)?);
+        }
+
+        shader.cached_type(
+            TypeKey::Struct {
+                name: String::from(self.name),
+                field_types: field_types.clone(),
+            },
+            |s| {
+                let id = s.builder.type_struct(field_types.clone());
+
+                s.name(id, self.name);
+
+                let mut offset = 0u32;
+
+                for (index, ref m) in self.members.iter().enumerate() {
+                    let index = index as u32;
+
+                    s.member_name(id, index, m.name);
+
+                    s.builder.member_decorate(
+                        id,
+                        index,
+                        Decoration::Offset,
+                        vec![Operand::LiteralInt32(offset)],
+                    );
+
+                    offset += m.ty.width();
+                    m.ty.register_struct_extra(id, index, s)?;
+                }
+
+                s.builder.decorate(id, Decoration::Block, vec![]);
+                Ok(id)
+            },
+        )
+    }
+
+    fn width(&self) -> u32 {
+        self.members.iter().map(|m| m.ty.width()).sum()
+    }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        if let Some(other) = other.as_struct() {
+            if self.name != other.name {
+                return false;
+            }
+
+            let mut a = self.members.iter();
+            let mut b = other.members.iter();
+
+            while let (Some(a), Some(b)) = (a.next(), b.next()) {
+                if !a.matches(b) {
+                    return false;
+                }
+            }
+
+            return a.next().is_none() && b.next().is_none();
+        } else {
+            false
+        }
+    }
+
+    fn display(&self) -> String {
+        format!("struct {}", self.name)
     }
 }

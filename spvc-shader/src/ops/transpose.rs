@@ -1,11 +1,11 @@
 use errors::*;
 use op::Op;
-use primitives::Matrix;
 use reg_op::RegOp;
 use shader::Shader;
 use spirv::Word;
 use spirv_type::SpirvType;
 use std::rc::Rc;
+use types::Matrix;
 
 #[derive(Debug)]
 pub struct Transpose {

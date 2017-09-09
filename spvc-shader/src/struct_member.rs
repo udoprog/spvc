@@ -1,14 +1,14 @@
 use super::spirv_type::SpirvType;
 
 #[derive(Debug)]
-pub struct GlslStructMember {
+pub struct StructMember {
     pub name: &'static str,
     pub ty: Box<SpirvType>,
     pub index: u32,
 }
 
-impl GlslStructMember {
-    pub fn matches(&self, other: &GlslStructMember) -> bool {
+impl StructMember {
+    pub fn matches(&self, other: &StructMember) -> bool {
         if self.name != other.name {
             return false;
         }

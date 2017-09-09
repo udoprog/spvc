@@ -1,11 +1,11 @@
 use errors::*;
 use op::Op;
-use primitives::{Float, Vector};
 use reg_op::RegOp;
 use shader::Shader;
 use spirv::Word;
 use spirv_type::SpirvType;
 use std::rc::Rc;
+use types::{Float, Vector};
 
 macro_rules! expand_vec {
     ($st:ident, $fn:ident, $orig_size:expr, $dest_size:expr, $($const:ident),*) => {

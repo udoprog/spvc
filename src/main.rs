@@ -14,31 +14,27 @@ use std::io::Write;
 use std::slice;
 
 #[derive(GlslStruct, Debug)]
+#[repr(C)]
 pub struct Model {
-    #[glsl(ty = "mat4")]
-    model: spvc_shader::GlslMat4,
-    #[glsl(ty = "vec4")]
-    base_color_factor: spvc_shader::GlslVec4,
-    #[glsl(ty = "bool")]
-    use_base_color_texture: spvc_shader::GlslBool,
+    model: st::Mat4,
+    base_color_factor: st::Vec4,
+    use_base_color_texture: st::Bool,
 }
 
 #[derive(GlslStruct, Debug)]
+#[repr(C)]
 pub struct Global {
-    #[glsl(ty = "mat4")]
-    camera: spvc_shader::GlslMat4,
-    #[glsl(ty = "mat4")]
-    view: spvc_shader::GlslMat4,
-    #[glsl(ty = "mat4")]
-    projection: spvc_shader::GlslMat4,
+    camera: st::Mat4,
+    view: st::Mat4,
+    projection: st::Mat4,
 }
 
 fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
     let mut shader = Shader::new();
 
-    let model = GlobalVar::new("model", Model::glsl_struct(), StorageClass::Uniform).build();
+    let model = GlobalVar::new("model", Model::type_info(), StorageClass::Uniform).build();
 
-    let global = GlobalVar::new("global", Global::glsl_struct(), StorageClass::Uniform).build();
+    let global = GlobalVar::new("global", Global::type_info(), StorageClass::Uniform).build();
 
     let position = GlobalVar::new("location", vec3(), StorageClass::Input)
         .with_location(0)

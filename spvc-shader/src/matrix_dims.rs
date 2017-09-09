@@ -1,5 +1,5 @@
 use super::errors::*;
-use super::primitives::{Float, Matrix, Vector};
+use super::types::{Float, Matrix, Vector};
 use super::vector_dims::VectorDims;
 
 /// Reflects the dimensions of a matrix, and how various operations affect them.

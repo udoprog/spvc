@@ -1,5 +1,4 @@
 use super::errors::*;
-use super::glsl_struct_member::GlslStructMember;
 use super::op::Op;
 use super::pointer::Pointer;
 use super::reg_op::RegOp;
@@ -7,14 +6,15 @@ use super::shader::Shader;
 use super::spirv::Word;
 use super::spirv_type::SpirvType;
 use super::storage_class::StorageClass;
+use super::struct_member::StructMember;
 use std::rc::Rc;
 
 pub trait AccessTrait {
-    fn access_member(&self, member: GlslStructMember) -> Result<Rc<Box<Op>>>;
+    fn access_member(&self, member: StructMember) -> Result<Rc<Box<Op>>>;
 }
 
 impl AccessTrait for Rc<Box<Op>> {
-    fn access_member(&self, member: GlslStructMember) -> Result<Rc<Box<Op>>> {
+    fn access_member(&self, member: StructMember) -> Result<Rc<Box<Op>>> {
         let base = self.base().map(Clone::clone).unwrap_or_else(
             || self.clone(),
         );

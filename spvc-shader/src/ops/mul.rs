@@ -1,11 +1,11 @@
 use errors::*;
 use op::Op;
-use primitives::{Matrix, Vector};
 use reg_op::RegOp;
 use shader::Shader;
 use spirv::Word;
 use spirv_type::SpirvType;
 use std::rc::Rc;
+use types::{Matrix, Vector};
 
 pub fn mul(lhs: Rc<Box<Op>>, rhs: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
     if let Some(op_type) = lhs.op_type().matrix_times_matrix(rhs.op_type())? {

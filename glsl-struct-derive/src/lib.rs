@@ -10,7 +10,6 @@ use std::u8;
 struct Field {
     index: u32,
     ident: syn::Ident,
-    const_ident: syn::Ident,
     type_builder: quote::Tokens,
 }
 
@@ -20,21 +19,49 @@ struct GlslAttribute {
 }
 
 impl GlslAttribute {
-    pub fn type_builder(&self) -> quote::Tokens {
-        let ty = self.ty.as_ref().expect(
-            "#[glsl(ty = ...)] attribute missing",
-        );
+    pub fn type_builder(&self) -> Option<quote::Tokens> {
+        if let Some(ref ty) = self.ty {
+            let out = match ty.as_str() {
+                "bool" => quote!(spvc_shader::Bool),
+                "float" => quote!(spvc_shader::Float),
+                "mat3" => quote!(spvc_shader::mat3()),
+                "mat4" => quote!(spvc_shader::mat4()),
+                "vec2" => quote!(spvc_shader::vec2()),
+                "vec3" => quote!(spvc_shader::vec3()),
+                "vec4" => quote!(spvc_shader::vec4()),
+                s => panic!(format!("unsupported type: {}", s)),
+            };
 
-        match ty.as_str() {
-            "bool" => quote!(spvc_shader::Bool),
-            "float" => quote!(spvc_shader::Float),
-            "mat4" => quote!(spvc_shader::mat4()),
-            "vec2" => quote!(spvc_shader::vec2()),
-            "vec3" => quote!(spvc_shader::vec3()),
-            "vec4" => quote!(spvc_shader::vec4()),
-            s => panic!(format!("unsupported type: {}", s)),
+            return Some(out);
+        }
+
+        None
+    }
+}
+
+fn field_type_builder(field: &syn::Field) -> Option<quote::Tokens> {
+    if let syn::Ty::Path(_, ref path) = field.ty {
+        let mut s = path.segments.iter().map(|s| &s.ident);
+
+        if let (Some(m), Some(type_name)) = (s.next(), s.next()) {
+            if m == "st" {
+                let out = match type_name.to_string().as_str() {
+                    "Bool" => quote!(spvc_shader::Bool),
+                    "Float" => quote!(spvc_shader::Float),
+                    "Mat3" => quote!(spvc_shader::mat3()),
+                    "Mat4" => quote!(spvc_shader::mat4()),
+                    "Vec2" => quote!(spvc_shader::vec2()),
+                    "Vec3" => quote!(spvc_shader::vec3()),
+                    "Vec4" => quote!(spvc_shader::vec4()),
+                    s => panic!(format!("unsupported type: {}", s)),
+                };
+
+                return Some(out);
+            }
         }
     }
+
+    None
 }
 
 fn impl_glsl_member(field: &Field) -> quote::Tokens {
@@ -45,8 +72,8 @@ fn impl_glsl_member(field: &Field) -> quote::Tokens {
     let mut toks = quote::Tokens::new();
 
     toks.append(quote!(
-        fn #ident() -> spvc_shader::glsl_struct_member::GlslStructMember  {
-            spvc_shader::glsl_struct_member::GlslStructMember {
+        fn #ident() -> spvc_shader::StructMember  {
+            spvc_shader::StructMember {
                 name: stringify!(#ident),
                 ty: Box::new(#type_builder),
                 index: #index,
@@ -61,7 +88,7 @@ fn impl_glsl_member(field: &Field) -> quote::Tokens {
 fn impl_glsl_struct_fn(name: &syn::Ident, fields: &[Field]) -> quote::Tokens {
     let mut toks = quote::Tokens::new();
 
-    toks.append("fn glsl_struct() -> spvc_shader::glsl_struct::GlslStruct {");
+    toks.append("fn type_info() -> spvc_shader::Struct {");
 
     toks.append("let mut members = Vec::new();");
 
@@ -73,7 +100,7 @@ fn impl_glsl_struct_fn(name: &syn::Ident, fields: &[Field]) -> quote::Tokens {
     }
 
     toks.append(quote! {
-        spvc_shader::glsl_struct::GlslStruct {
+        spvc_shader::Struct {
             name: stringify!(#name),
             members: members,
         }
@@ -127,12 +154,15 @@ fn impl_glsl_struct(ast: &syn::DeriveInput) -> quote::Tokens {
                 let ident = field.ident.as_ref().expect("expected field identifier");
                 let glsl_attribute = glsl_attribute(&field.attrs);
 
-                let type_builder = glsl_attribute.type_builder();
+                let type_builder =
+                    glsl_attribute
+                        .type_builder()
+                        .or_else(|| field_type_builder(field))
+                        .expect(&format!("cannot identify type for field: {}", ident));
 
                 out.push(Field {
                     index: index as u32,
                     ident: ident.to_owned(),
-                    const_ident: ident.to_string().to_uppercase().into(),
                     type_builder: type_builder,
                 });
             }

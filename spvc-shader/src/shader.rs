@@ -1,12 +1,12 @@
 use super::errors::*;
 use super::function::Function;
 use super::op::Op;
-use super::primitives::{Float, UnsignedInteger};
 use super::rspirv;
 use super::spirv::{ExecutionModel, Word};
 use super::spirv_type::SpirvType;
 use super::storage_class::StorageClass;
 use super::type_key::TypeKey;
+use super::types::{Float, UnsignedInteger};
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;

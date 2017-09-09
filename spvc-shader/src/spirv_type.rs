@@ -1,10 +1,9 @@
 use super::errors::*;
-use super::glsl_struct::GlslStruct;
 use super::matrix_dims::MatrixDims;
 use super::pointer::Pointer;
-use super::primitives::{Bool, Float, Matrix, UnsignedInteger, Vector};
 use super::shader::Shader;
 use super::spirv::Word;
+use super::types::{Bool, Float, Matrix, Struct, UnsignedInteger, Vector};
 use super::vector_dims::VectorDims;
 use std::fmt;
 
@@ -68,7 +67,7 @@ pub trait SpirvType: fmt::Debug {
         None
     }
 
-    fn as_glsl_struct(&self) -> Option<GlslStruct> {
+    fn as_struct(&self) -> Option<Struct> {
         None
     }
 
