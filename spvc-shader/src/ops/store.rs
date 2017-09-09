@@ -17,10 +17,17 @@ pub struct Store {
 pub fn store(dest: Rc<Box<Op>>, source: Rc<Box<Op>>) -> Result<Rc<Box<Op>>> {
     let dest_type = dest.op_type().as_pointer().ok_or(
         ErrorKind::ExpectedPointer(
-            "load",
+            "store",
             source.op_type().display(),
         ),
     )?;
+
+    if !dest_type.pointee_type.matches(source.op_type()) {
+        return Err(
+            ErrorKind::StoreMismatch("store", dest_type.display(), source.op_type().display())
+                .into(),
+        );
+    }
 
     Ok(Rc::new(Box::new(Store {
         dest: dest,

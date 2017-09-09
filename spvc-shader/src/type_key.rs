@@ -36,4 +36,5 @@ pub enum TypeKey {
         location: Option<u32>,
     },
     ConstantU32 { integer_type: Word, value: u32 },
+    ConstantF32 { float_type: Word, value: u32 },
 }

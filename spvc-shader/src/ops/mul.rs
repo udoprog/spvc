@@ -68,7 +68,7 @@ impl Op for MatrixTimesMatrixMul {
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
-        let result_type = self.lhs.op_type().register_type(shader)?;
+        let result_type = self.op_type.register_type(shader)?;
 
         let lhs = self.lhs.register_op(shader)?;
         let rhs = self.rhs.register_op(shader)?;
@@ -117,7 +117,7 @@ impl Op for MatrixTimesVectorMul {
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
-        let result_type = self.lhs.op_type().register_type(shader)?;
+        let result_type = self.op_type.register_type(shader)?;
 
         let lhs = self.lhs.register_op(shader)?;
         let rhs = self.rhs.register_op(shader)?;

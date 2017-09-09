@@ -22,6 +22,18 @@ impl SpirvType for Float {
     fn width(&self) -> u32 {
         4
     }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        other.as_float().is_some()
+    }
+
+    fn as_float(&self) -> Option<Float> {
+        Some(*self)
+    }
+
+    fn display(&self) -> String {
+        String::from("float")
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -37,6 +49,18 @@ impl SpirvType for UnsignedInteger {
     fn width(&self) -> u32 {
         4
     }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        other.as_unsigned_integer().is_some()
+    }
+
+    fn as_unsigned_integer(&self) -> Option<UnsignedInteger> {
+        Some(*self)
+    }
+
+    fn display(&self) -> String {
+        String::from("uint32_t")
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -49,6 +73,18 @@ impl SpirvType for Bool {
 
     fn width(&self) -> u32 {
         4
+    }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        other.as_bool().is_some()
+    }
+
+    fn as_bool(&self) -> Option<Bool> {
+        Some(*self)
+    }
+
+    fn display(&self) -> String {
+        String::from("bool")
     }
 }
 
@@ -88,8 +124,25 @@ impl SpirvType for Vector {
         Some(self.component_count)
     }
 
+    fn matches(&self, other: &SpirvType) -> bool {
+        if let Some(other) = other.as_vector() {
+            self.component.matches(other.component.as_ref()) &&
+                self.component_count == other.component_count
+        } else {
+            false
+        }
+    }
+
     fn as_vector_dims(&self) -> Option<VectorDims> {
         Some(VectorDims::new(self.component_count))
+    }
+
+    fn as_vector(&self) -> Option<Vector> {
+        Some(self.clone())
+    }
+
+    fn display(&self) -> String {
+        format!("vec{}[{}]", self.component_count, self.component.display())
     }
 }
 
@@ -161,9 +214,26 @@ impl SpirvType for Matrix {
         self.column_type.width() * self.column_count
     }
 
+    fn matches(&self, other: &SpirvType) -> bool {
+        if let Some(other) = other.as_matrix() {
+            self.column_type.matches(other.column_type.as_ref()) &&
+                self.column_count == other.column_count
+        } else {
+            false
+        }
+    }
+
     fn as_matrix_dims(&self) -> Option<MatrixDims> {
         return self.column_type.row_count().map(|row_count| {
             MatrixDims::new(self.column_count, row_count)
         });
+    }
+
+    fn as_matrix(&self) -> Option<Matrix> {
+        Some(self.clone())
+    }
+
+    fn display(&self) -> String {
+        format!("mat{}[{}]", self.column_count, self.column_type.display())
     }
 }

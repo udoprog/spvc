@@ -41,5 +41,11 @@ error_chain! {
 
         ArgumentMismatch(op: &'static str, arguments: Vec<String>) {
         }
+
+        StoreMismatch(op: &'static str, dest: String, source: String) {
+        }
+
+        VecMismatch(op: &'static str, source: String) {
+        }
     }
 }

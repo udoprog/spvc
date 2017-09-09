@@ -1,7 +1,8 @@
 use super::errors::*;
+use super::glsl_struct::GlslStruct;
 use super::matrix_dims::MatrixDims;
 use super::pointer::Pointer;
-use super::primitives::{Matrix, Vector};
+use super::primitives::{Bool, Float, Matrix, UnsignedInteger, Vector};
 use super::shader::Shader;
 use super::spirv::Word;
 use super::vector_dims::VectorDims;
@@ -10,9 +11,7 @@ use std::fmt;
 /// Reflects a type in SPIR-V.
 pub trait SpirvType: fmt::Debug {
     /// Display a representation of this type.
-    fn display(&self) -> String {
-        format!("{:?}", self)
-    }
+    fn display(&self) -> String;
 
     fn register_type(&self, shader: &mut Shader) -> Result<Word>;
 
@@ -49,6 +48,30 @@ pub trait SpirvType: fmt::Debug {
         None
     }
 
+    fn as_float(&self) -> Option<Float> {
+        None
+    }
+
+    fn as_bool(&self) -> Option<Bool> {
+        None
+    }
+
+    fn as_unsigned_integer(&self) -> Option<UnsignedInteger> {
+        None
+    }
+
+    fn as_vector(&self) -> Option<Vector> {
+        None
+    }
+
+    fn as_matrix(&self) -> Option<Matrix> {
+        None
+    }
+
+    fn as_glsl_struct(&self) -> Option<GlslStruct> {
+        None
+    }
+
     /// Returns dimension of vector (as part of column major matrix).
     /// None if type is not a vector.
     fn row_count(&self) -> Option<u32> {
@@ -57,4 +80,7 @@ pub trait SpirvType: fmt::Debug {
 
     /// Width in bytes of the type.
     fn width(&self) -> u32;
+
+    /// Check if this type matches another type.
+    fn matches(&self, other: &SpirvType) -> bool;
 }

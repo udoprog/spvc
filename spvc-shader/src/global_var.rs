@@ -167,7 +167,19 @@ impl SpirvType for GlobalVar {
         shader.register_pointer_type(self.storage_class, pointee_type)
     }
 
+    fn as_pointer(&self) -> Option<Pointer> {
+        self.ty.as_pointer()
+    }
+
     fn width(&self) -> u32 {
-        4
+        self.ty.width()
+    }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        return self.ty.matches(other);
+    }
+
+    fn display(&self) -> String {
+        self.ty.display()
     }
 }

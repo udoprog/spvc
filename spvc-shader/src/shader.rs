@@ -1,7 +1,7 @@
 use super::errors::*;
 use super::function::Function;
 use super::op::Op;
-use super::primitives::UnsignedInteger;
+use super::primitives::{Float, UnsignedInteger};
 use super::rspirv;
 use super::spirv::{ExecutionModel, Word};
 use super::spirv_type::SpirvType;
@@ -65,6 +65,18 @@ impl Shader {
                 value: value,
             },
             |s| Ok(s.builder.constant_u32(integer_type, value)),
+        )
+    }
+
+    pub(crate) fn constant_f32(&mut self, value: f32) -> Result<Word> {
+        let float_type = Float.register_type(self)?;
+
+        self.cached_type(
+            TypeKey::ConstantF32 {
+                float_type: float_type,
+                value: value.to_bits(),
+            },
+            |s| Ok(s.builder.constant_f32(float_type, value)),
         )
     }
 

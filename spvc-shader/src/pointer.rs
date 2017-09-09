@@ -39,4 +39,18 @@ impl SpirvType for Pointer {
     fn width(&self) -> u32 {
         4
     }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        if let Some(pointer) = other.as_pointer() {
+            return self.pointee_type.matches(
+                pointer.pointee_type.as_ref().as_ref(),
+            );
+        }
+
+        false
+    }
+
+    fn display(&self) -> String {
+        format!("*{}", self.pointee_type.display())
+    }
 }

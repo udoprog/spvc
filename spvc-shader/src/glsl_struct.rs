@@ -58,4 +58,29 @@ impl SpirvType for GlslStruct {
     fn width(&self) -> u32 {
         self.members.iter().map(|m| m.ty.width()).sum()
     }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        if let Some(other) = other.as_glsl_struct() {
+            if self.name != other.name {
+                return false;
+            }
+
+            let mut a = self.members.iter();
+            let mut b = other.members.iter();
+
+            while let (Some(a), Some(b)) = (a.next(), b.next()) {
+                if !a.matches(b) {
+                    return false;
+                }
+            }
+
+            return a.next().is_none() && b.next().is_none();
+        } else {
+            false
+        }
+    }
+
+    fn display(&self) -> String {
+        format!("struct {}", self.name)
+    }
 }

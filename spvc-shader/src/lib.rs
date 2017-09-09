@@ -1,3 +1,5 @@
+#![recursion_limit="128"]
+
 extern crate rspirv;
 extern crate spirv_headers as spirv;
 #[macro_use]
@@ -28,7 +30,7 @@ pub type GlslBool = u32;
 pub use self::access::AccessTrait;
 pub use self::function::FunctionBuilder;
 pub use self::global_var::GlobalVar;
-pub use self::ops::{load, mul, store, transpose};
+pub use self::ops::*;
 pub use self::primitives::Bool;
 pub use self::primitives::Float;
 pub use self::primitives::Matrix;

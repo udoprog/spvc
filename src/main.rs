@@ -60,7 +60,7 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
         .with_location(1)
         .build();
 
-    let gl_position = GlobalVar::new("gl_Position", vec3(), StorageClass::Output)
+    let gl_position = GlobalVar::new("gl_Position", vec4(), StorageClass::Output)
         .with_built_in(BuiltIn::Position)
         .build();
 
@@ -71,9 +71,14 @@ fn build_vertex_shader() -> Result<self::rspirv::mr::Module> {
 
         let worldview = mul(load(view)?, load(camera.clone())?)?;
 
-        main.op(store(gl_position.clone(), load(position.clone())?)?);
+        let pos = vec3_to_vec4(load(position.clone())?, 1.0)?;
+        let pos = mul(load(model.access_member(Model::model())?)?, pos)?;
+        let pos = mul(worldview, pos)?;
+        let pos = mul(load(global.access_member(Global::projection())?)?, pos)?;
+
+        main.op(store(gl_position.clone(), pos)?);
         main.op(store(v_tex_coord.clone(), load(tex_coord.clone())?)?);
-        main.op(store(v_normal.clone(), transpose(worldview)?)?);
+        main.op(store(v_normal.clone(), load(normal.clone())?)?);
 
         shader.vertex_entry_point(
             main.returns_void(),
