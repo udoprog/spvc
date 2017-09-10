@@ -16,6 +16,8 @@ pub struct Shader {
     pub(crate) builder: rspirv::mr::Builder,
     /// Cached types, to only initialize each type once.
     type_cache: HashMap<TypeKey, Word>,
+    #[cfg(vulkan)]
+    vulkano_entry_points: Vec<self::vulkano::VulkanoShader>,
 }
 
 impl fmt::Debug for Shader {
@@ -40,6 +42,8 @@ impl Shader {
         Shader {
             builder: builder,
             type_cache: HashMap::new(),
+            #[cfg(vulkan)]
+            vulkano_entry_points: Vec::new(),
         }
     }
 
@@ -113,10 +117,10 @@ impl Shader {
         function: Function,
         interface: Vec<Rc<Box<Op>>>,
     ) -> Result<()> {
-        let interface = {
+        let interface_words = {
             let mut out = Vec::new();
 
-            for i in interface {
+            for i in &interface {
                 out.push(i.register_op(self)?.op_id(self)?.ok_or(ErrorKind::NoOp)?);
             }
 
@@ -130,13 +134,85 @@ impl Shader {
             ExecutionModel::Vertex,
             id,
             name,
-            interface,
+            interface_words,
         );
+
+        #[cfg(vulkan)]
+        {
+            self.vulkano_entry_points.push(
+                self::vulkano::VulkanoShader::from_ops(function.name.as_str(), &interface)?,
+            );
+        }
 
         Ok(())
     }
 
     pub fn module(self) -> rspirv::mr::Module {
         self.builder.module()
+    }
+}
+
+#[cfg(feature = "vulkan")]
+mod vulkano {
+    use super::{Op, Rc};
+    use errors::*;
+    use rspirv::binary::Assemble;
+    use std::borrow::Cow;
+    use std::slice;
+    use std::sync::Arc;
+    use vulkano::pipeline::shader::{ShaderInterfaceDef, ShaderInterfaceDefEntry};
+
+    impl super::Shader {
+        pub fn vulkan_shader_module(
+            self,
+            device: ::std::sync::Arc<::vulkano::device::Device>,
+        ) -> Result<Arc<::vulkano::pipeline::shader::ShaderModule>> {
+            use vulkano::pipeline::shader::ShaderModule;
+
+            let module = self.module();
+            let code = module.assemble();
+
+            let module = unsafe {
+                let code = slice::from_raw_parts(code.as_ptr() as *const u8, code.len() * 4);
+                ShaderModule::new(device, &code)?
+            };
+
+            Ok(module)
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct VulkanoShader {
+        entries: Vec<ShaderInterfaceDefEntry>,
+    }
+
+    impl VulkanoShader {
+        pub fn from_ops(name: &str, ops: &Vec<Rc<Box<Op>>>) -> Result<VulkanoShader> {
+            let mut entries = Vec::new();
+
+            for op in ops {
+                let interface = op.as_interface().ok_or(ErrorKind::NotInterface)?;
+
+                let format = op.op_type().as_vulkano_format().ok_or(
+                    ErrorKind::IllegalInterfaceType,
+                )?;
+
+                entries.push(ShaderInterfaceDefEntry {
+                    location: interface.location..interface.location + 1,
+                    format: format,
+                    name: Some(Cow::Owned(String::from(name))),
+                });
+            }
+
+            Ok(VulkanoShader { entries: entries })
+        }
+    }
+
+    unsafe impl ShaderInterfaceDef for VulkanoShader {
+        type Iter = ::std::vec::IntoIter<ShaderInterfaceDefEntry>;
+
+        fn elements(&self) -> Self::Iter {
+            self.entries.clone().into_iter()
+        }
     }
 }

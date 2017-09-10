@@ -1,4 +1,5 @@
 use super::errors::*;
+use super::interface::Interface;
 use super::ops::BadOp;
 use super::reg_op::RegOp;
 use super::shader::Shader;
@@ -27,6 +28,10 @@ pub trait Op: fmt::Debug {
 
     /// Convert this op to a bad op, if it is one.
     fn as_bad_op(&self) -> Option<&BadOp> {
+        None
+    }
+
+    fn as_interface(&self) -> Option<Interface> {
         None
     }
 }

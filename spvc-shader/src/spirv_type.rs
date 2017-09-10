@@ -86,6 +86,12 @@ pub trait SpirvType: fmt::Debug {
 
     /// Check if this type matches another type.
     fn matches(&self, other: &SpirvType) -> bool;
+
+    /// Current type as vulkano format.
+    #[cfg(feature = "vulkan")]
+    fn as_vulkano_format(&self) -> Option<::vulkano::format::Format> {
+        None
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

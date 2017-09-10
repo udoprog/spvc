@@ -1,5 +1,7 @@
 #![recursion_limit="128"]
 
+#[cfg(feature = "vulkan")]
+extern crate vulkano;
 extern crate rspirv;
 extern crate spirv_headers as spirv;
 #[macro_use]
@@ -17,6 +19,7 @@ mod spirv_type;
 mod op;
 mod matrix_dims;
 mod vector_dims;
+mod interface;
 mod storage_class;
 mod type_key;
 pub mod errors;

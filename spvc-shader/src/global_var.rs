@@ -1,4 +1,5 @@
 use super::errors::*;
+use super::interface::Interface;
 use super::op::Op;
 use super::pointer::Pointer;
 use super::reg_op::RegOp;
@@ -22,6 +23,10 @@ pub struct GlobalVar {
 }
 
 impl Op for GlobalVar {
+    fn as_interface(&self) -> Option<Interface> {
+        self.location.map(|l| Interface { location: l })
+    }
+
     fn storage_class(&self) -> Option<StorageClass> {
         Some(self.storage_class)
     }

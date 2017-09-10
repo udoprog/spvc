@@ -138,38 +138,39 @@ fn glsl_attribute(attribute: &[syn::Attribute]) -> GlslAttribute {
     out
 }
 
-fn impl_glsl_struct(ast: &syn::DeriveInput) -> quote::Tokens {
-    let fields = {
-        let mut out: Vec<Field> = Vec::new();
+fn resolve_fields(ast: &syn::DeriveInput) -> Vec<Field> {
+    let mut out: Vec<Field> = Vec::new();
 
-        if let syn::Body::Struct(syn::VariantData::Struct(ref fields)) = ast.body {
-            if fields.len() > u8::MAX as usize {
-                panic!(format!(
-                    "Too many members. Has {} but max is 255.",
-                    fields.len()
-                ));
-            }
-
-            for (index, ref field) in fields.iter().enumerate() {
-                let ident = field.ident.as_ref().expect("expected field identifier");
-                let glsl_attribute = glsl_attribute(&field.attrs);
-
-                let type_builder =
-                    glsl_attribute
-                        .type_builder()
-                        .or_else(|| field_type_builder(field))
-                        .expect(&format!("cannot identify type for field: {}", ident));
-
-                out.push(Field {
-                    index: index as u32,
-                    ident: ident.to_owned(),
-                    type_builder: type_builder,
-                });
-            }
+    if let syn::Body::Struct(syn::VariantData::Struct(ref fields)) = ast.body {
+        if fields.len() > u8::MAX as usize {
+            panic!(format!(
+                "Too many members. Has {} but max is 255.",
+                fields.len()
+            ));
         }
 
-        out
-    };
+        for (index, ref field) in fields.iter().enumerate() {
+            let ident = field.ident.as_ref().expect("expected field identifier");
+            let glsl_attribute = glsl_attribute(&field.attrs);
+
+            let type_builder = glsl_attribute
+                .type_builder()
+                .or_else(|| field_type_builder(field))
+                .expect(&format!("cannot identify type for field: {}", ident));
+
+            out.push(Field {
+                index: index as u32,
+                ident: ident.to_owned(),
+                type_builder: type_builder,
+            });
+        }
+    }
+
+    out
+}
+
+fn impl_glsl_struct(ast: &syn::DeriveInput) -> quote::Tokens {
+    let fields = resolve_fields(ast);
 
     let name = &ast.ident;
 
@@ -182,8 +183,8 @@ fn impl_glsl_struct(ast: &syn::DeriveInput) -> quote::Tokens {
     }
 
     toks.append(impl_glsl_struct_fn(name, &fields));
-
     toks.append("}");
+
     toks
 }
 

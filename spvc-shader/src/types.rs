@@ -181,6 +181,27 @@ impl SpirvType for Vector {
     fn display(&self) -> String {
         format!("vec{}[{}]", self.component_count, self.component.display())
     }
+
+    #[cfg(feature = "vulkan")]
+    fn as_vulkano_format(&self) -> Option<::vulkano::format::Format> {
+        use vulkano::format::Format::*;
+
+        if self.component.as_float().is_some() {
+            if self.component_count == 2 {
+                return Some(R32G32Sfloat);
+            }
+
+            if self.component_count == 3 {
+                return Some(R32G32B32Sfloat);
+            }
+
+            if self.component_count == 4 {
+                return Some(R32G32B32A32Sfloat);
+            }
+        }
+
+        None
+    }
 }
 
 #[derive(Debug, Clone)]
