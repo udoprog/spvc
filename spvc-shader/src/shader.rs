@@ -361,15 +361,21 @@ mod vulkan {
         let stages = kind.to_shader_stages();
 
         for op in ops {
-            let format = op.op_type().as_vulkano_format().ok_or(
-                ErrorKind::IllegalInterfaceType,
-            )?;
-
             let interface = op.as_interface().ok_or(ErrorKind::NotInterface)?;
 
-            let (dest, location, name) = match interface {
-                Input { var, location } => (&mut input, location, var.name.to_owned()),
-                Output { var, location } => (&mut output, location, var.name.to_owned()),
+            let (dest, location, name, dest_type) = match interface {
+                Input { var, location } => (
+                    &mut input,
+                    location,
+                    var.name.to_owned(),
+                    &var.ty.pointee_type,
+                ),
+                Output { var, location } => (
+                    &mut output,
+                    location,
+                    var.name.to_owned(),
+                    &var.ty.pointee_type,
+                ),
                 Uniform { var, binding, set } => {
                     let descriptor = var.as_vulkan_descriptor(&stages).ok_or(
                         ErrorKind::IllegalInterfaceType,
@@ -383,7 +389,12 @@ mod vulkan {
                     descriptors.insert((set, binding), descriptor);
                     continue;
                 }
+                BuiltIn => continue,
             };
+
+            let format = dest_type.as_vulkano_format().ok_or(
+                ErrorKind::IllegalInterfaceType,
+            )?;
 
             dest.push(ShaderInterfaceDefEntry {
                 location: location..location + 1,

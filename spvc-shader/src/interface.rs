@@ -9,4 +9,5 @@ pub enum Interface<'a> {
         set: u32,
         binding: u32,
     },
+    BuiltIn,
 }

@@ -26,6 +26,10 @@ impl Op for GlobalVar {
     fn as_interface(&self) -> Option<Interface> {
         use self::StorageClass::*;
 
+        if let Some(_) = self.built_in {
+            return Some(Interface::BuiltIn);
+        }
+
         match self.storage_class {
             Input => {
                 self.location.map(|l| {
