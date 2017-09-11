@@ -4,6 +4,7 @@ error_chain! {
     foreign_links {
         Rspirv(rspirv::mr::Error);
         VulkanoOomError(::vulkano::OomError) #[cfg(feature = "vulkan")];
+        FfiNulError(::std::ffi::NulError);
     }
 
     errors {

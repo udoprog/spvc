@@ -13,18 +13,49 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct GlobalVar {
-    name: String,
+    pub name: String,
     storage_class: StorageClass,
-    ty: Pointer,
-    set: Option<u32>,
-    binding: Option<u32>,
-    location: Option<u32>,
-    built_in: Option<BuiltIn>,
+    pub ty: Pointer,
+    pub set: Option<u32>,
+    pub binding: Option<u32>,
+    pub location: Option<u32>,
+    pub built_in: Option<BuiltIn>,
 }
 
 impl Op for GlobalVar {
     fn as_interface(&self) -> Option<Interface> {
-        self.location.map(|l| Interface { location: l })
+        use self::StorageClass::*;
+
+        match self.storage_class {
+            Input => {
+                self.location.map(|l| {
+                    Interface::Input {
+                        var: self,
+                        location: l,
+                    }
+                })
+            }
+            Output => {
+                self.location.map(|l| {
+                    Interface::Output {
+                        var: self,
+                        location: l,
+                    }
+                })
+            }
+            Uniform => {
+                self.set.and_then(|set| {
+                    self.binding.map(|binding| {
+                        Interface::Uniform {
+                            var: self,
+                            set: set,
+                            binding: binding,
+                        }
+                    })
+                })
+            }
+            _ => None,
+        }
     }
 
     fn storage_class(&self) -> Option<StorageClass> {
@@ -163,6 +194,25 @@ impl GlobalVar {
 
     pub fn build(self) -> Rc<Box<Op>> {
         Rc::new(Box::new(self))
+    }
+
+    #[cfg(feature = "vulkan")]
+    pub fn as_vulkan_descriptor(
+        &self,
+        stages: &::vulkano::descriptor::descriptor::ShaderStages,
+    ) -> Option<::vulkano::descriptor::descriptor::DescriptorDesc> {
+        use vulkano::descriptor::descriptor::{DescriptorBufferDesc, DescriptorDesc,
+                                              DescriptorDescTy};
+
+        Some(DescriptorDesc {
+            ty: DescriptorDescTy::Buffer(DescriptorBufferDesc {
+                dynamic: Some(false),
+                storage: false,
+            }),
+            array_count: 1,
+            stages: stages.clone(),
+            readonly: true,
+        })
     }
 }
 

@@ -11,13 +11,30 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+#[derive(Debug, Clone, Copy)]
+pub enum ShaderKind {
+    Vertex,
+    Fragment,
+}
+
+impl ShaderKind {
+    pub fn as_execution_model(self) -> ExecutionModel {
+        use self::ShaderKind::*;
+
+        match self {
+            Vertex => ExecutionModel::Vertex,
+            Fragment => ExecutionModel::Fragment,
+        }
+    }
+}
+
 pub struct Shader {
     /// Internal builder
     pub(crate) builder: rspirv::mr::Builder,
     /// Cached types, to only initialize each type once.
     type_cache: HashMap<TypeKey, Word>,
-    #[cfg(vulkan)]
-    vulkano_entry_points: Vec<self::vulkano::VulkanoShader>,
+    #[cfg(feature = "vulkan")]
+    vulkan_shader_interfaces: Vec<self::vulkan::ShaderInterface>,
 }
 
 impl fmt::Debug for Shader {
@@ -42,8 +59,8 @@ impl Shader {
         Shader {
             builder: builder,
             type_cache: HashMap::new(),
-            #[cfg(vulkan)]
-            vulkano_entry_points: Vec::new(),
+            #[cfg(feature = "vulkan")]
+            vulkan_shader_interfaces: Vec::new(),
         }
     }
 
@@ -112,8 +129,9 @@ impl Shader {
         self.builder.name(id, name.to_string());
     }
 
-    pub fn vertex_entry_point(
+    pub fn entry_point(
         &mut self,
+        kind: ShaderKind,
         function: Function,
         interface: Vec<Rc<Box<Op>>>,
     ) -> Result<()> {
@@ -131,17 +149,16 @@ impl Shader {
         let id = function.register_function(self)?;
 
         self.builder.entry_point(
-            ExecutionModel::Vertex,
+            kind.as_execution_model(),
             id,
-            name,
+            name.clone(),
             interface_words,
         );
 
-        #[cfg(vulkan)]
+        #[cfg(feature = "vulkan")]
         {
-            self.vulkano_entry_points.push(
-                self::vulkano::VulkanoShader::from_ops(function.name.as_str(), &interface)?,
-            );
+            let interface = self::vulkan::interface_from_ops(name.clone(), kind, &interface)?;
+            self.vulkan_shader_interfaces.push(interface);
         }
 
         Ok(())
@@ -153,23 +170,64 @@ impl Shader {
 }
 
 #[cfg(feature = "vulkan")]
-mod vulkano {
+mod vulkan {
     use super::{Op, Rc};
     use errors::*;
+    use interface::Interface;
     use rspirv::binary::Assemble;
     use std::borrow::Cow;
+    use std::cmp;
+    use std::collections::HashMap;
+    use std::ffi::{CStr, CString};
     use std::slice;
     use std::sync::Arc;
-    use vulkano::pipeline::shader::{ShaderInterfaceDef, ShaderInterfaceDefEntry};
+    use vulkano::descriptor::descriptor::{DescriptorDesc, ShaderStages};
+    use vulkano::descriptor::pipeline_layout::{PipelineLayoutDesc, PipelineLayoutDescPcRange};
+    use vulkano::pipeline::shader::{GraphicsEntryPoint, GraphicsShaderType, ShaderInterfaceDef,
+                                    ShaderInterfaceDefEntry};
 
+    // patch implementation of ShaderKind.
+    impl super::ShaderKind {
+        pub fn to_shader_stages(self) -> ShaderStages {
+            use super::ShaderKind::*;
+
+            match self {
+                Vertex => ShaderStages {
+                    vertex: true,
+                    ..ShaderStages::none()
+                },
+                Fragment => ShaderStages {
+                    fragment: true,
+                    ..ShaderStages::none()
+                },
+            }
+        }
+
+        pub fn to_shader_type(self) -> GraphicsShaderType {
+            use super::ShaderKind::*;
+
+            match self {
+                Vertex => GraphicsShaderType::Vertex,
+                Fragment => GraphicsShaderType::Fragment,
+            }
+        }
+    }
+
+    // patch implementation of Shader.
     impl super::Shader {
         pub fn vulkan_shader_module(
             self,
             device: ::std::sync::Arc<::vulkano::device::Device>,
-        ) -> Result<Arc<::vulkano::pipeline::shader::ShaderModule>> {
+        ) -> Result<VulkanShader> {
             use vulkano::pipeline::shader::ShaderModule;
 
-            let module = self.module();
+            let mut entry_points = HashMap::new();
+
+            for interface in self.vulkan_shader_interfaces {
+                entry_points.insert(interface.name.clone(), interface);
+            }
+
+            let module = self.builder.module();
             let code = module.assemble();
 
             let module = unsafe {
@@ -177,42 +235,179 @@ mod vulkano {
                 ShaderModule::new(device, &code)?
             };
 
-            Ok(module)
+            Ok(VulkanShader {
+                module: module,
+                entry_points: entry_points,
+            })
         }
     }
 
     #[derive(Debug)]
-    pub struct VulkanoShader {
-        entries: Vec<ShaderInterfaceDefEntry>,
+    pub struct ShaderInterface {
+        name: String,
+        name_cstring: CString,
+        kind: super::ShaderKind,
+        input: ShaderInput,
+        output: ShaderOutput,
+        layout: ShaderLayout,
     }
 
-    impl VulkanoShader {
-        pub fn from_ops(name: &str, ops: &Vec<Rc<Box<Op>>>) -> Result<VulkanoShader> {
-            let mut entries = Vec::new();
+    #[derive(Debug)]
+    pub struct VulkanShader {
+        module: Arc<::vulkano::pipeline::shader::ShaderModule>,
+        entry_points: HashMap<String, ShaderInterface>,
+    }
 
-            for op in ops {
-                let interface = op.as_interface().ok_or(ErrorKind::NotInterface)?;
+    impl VulkanShader {
+        pub fn graphics_entry_point(
+            &self,
+            name: &str,
+        ) -> Option<GraphicsEntryPoint<(), ShaderInput, ShaderOutput, ShaderLayout>> {
+            if let Some(interface) = self.entry_points.get(name) {
+                let entry_point = unsafe {
+                    let name = CStr::from_ptr(interface.name_cstring.as_ptr());
 
-                let format = op.op_type().as_vulkano_format().ok_or(
-                    ErrorKind::IllegalInterfaceType,
-                )?;
+                    self.module.graphics_entry_point(
+                        name,
+                        interface.input.clone(),
+                        interface.output.clone(),
+                        interface.layout.clone(),
+                        interface.kind.to_shader_type(),
+                    )
+                };
 
-                entries.push(ShaderInterfaceDefEntry {
-                    location: interface.location..interface.location + 1,
-                    format: format,
-                    name: Some(Cow::Owned(String::from(name))),
-                });
+                return Some(entry_point);
             }
 
-            Ok(VulkanoShader { entries: entries })
+            None
         }
     }
 
-    unsafe impl ShaderInterfaceDef for VulkanoShader {
+    #[derive(Debug, Clone)]
+    pub struct ShaderInput {
+        input: Vec<ShaderInterfaceDefEntry>,
+    }
+
+    unsafe impl ShaderInterfaceDef for ShaderInput {
         type Iter = ::std::vec::IntoIter<ShaderInterfaceDefEntry>;
 
         fn elements(&self) -> Self::Iter {
-            self.entries.clone().into_iter()
+            self.input.clone().into_iter()
         }
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct ShaderOutput {
+        output: Vec<ShaderInterfaceDefEntry>,
+    }
+
+    unsafe impl ShaderInterfaceDef for ShaderOutput {
+        type Iter = ::std::vec::IntoIter<ShaderInterfaceDefEntry>;
+
+        fn elements(&self) -> Self::Iter {
+            self.output.clone().into_iter()
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct ShaderLayout {
+        /// Number of sets.
+        num_sets: usize,
+        /// Bindings in sets.
+        bindings: HashMap<usize, usize>,
+        /// Descriptors
+        descriptors: HashMap<(usize, usize), DescriptorDesc>,
+        /// Number of push constants.
+        num_push_constants_ranges: usize,
+        /// Push constant ranges.
+        push_constants_range: HashMap<usize, PipelineLayoutDescPcRange>,
+    }
+
+    unsafe impl PipelineLayoutDesc for ShaderLayout {
+        fn num_sets(&self) -> usize {
+            self.num_sets
+        }
+
+        fn num_bindings_in_set(&self, set: usize) -> Option<usize> {
+            self.bindings.get(&set).cloned()
+        }
+
+        fn descriptor(&self, set: usize, binding: usize) -> Option<DescriptorDesc> {
+            self.descriptors.get(&(set, binding)).cloned()
+        }
+
+        fn num_push_constants_ranges(&self) -> usize {
+            self.num_push_constants_ranges
+        }
+
+        fn push_constants_range(&self, num: usize) -> Option<PipelineLayoutDescPcRange> {
+            self.push_constants_range.get(&num).cloned()
+        }
+    }
+
+    pub fn interface_from_ops(
+        name: String,
+        kind: super::ShaderKind,
+        ops: &Vec<Rc<Box<Op>>>,
+    ) -> Result<ShaderInterface> {
+        use self::Interface::*;
+
+        let mut num_sets = 0usize;
+        let mut bindings = HashMap::new();
+        let mut descriptors = HashMap::new();
+        let mut input = Vec::new();
+        let mut output = Vec::new();
+
+        let stages = kind.to_shader_stages();
+
+        for op in ops {
+            let format = op.op_type().as_vulkano_format().ok_or(
+                ErrorKind::IllegalInterfaceType,
+            )?;
+
+            let interface = op.as_interface().ok_or(ErrorKind::NotInterface)?;
+
+            let (dest, location, name) = match interface {
+                Input { var, location } => (&mut input, location, var.name.to_owned()),
+                Output { var, location } => (&mut output, location, var.name.to_owned()),
+                Uniform { var, binding, set } => {
+                    let descriptor = var.as_vulkan_descriptor(&stages).ok_or(
+                        ErrorKind::IllegalInterfaceType,
+                    )?;
+
+                    let set = set as usize;
+                    let binding = binding as usize;
+
+                    num_sets = cmp::max(set, num_sets);
+                    bindings.insert(set, binding);
+                    descriptors.insert((set, binding), descriptor);
+                    continue;
+                }
+            };
+
+            dest.push(ShaderInterfaceDefEntry {
+                location: location..location + 1,
+                format: format,
+                name: Some(Cow::Owned(name)),
+            });
+        }
+
+        let num_push_constants_ranges = 0;
+        let push_constants_range = HashMap::new();
+
+        Ok(ShaderInterface {
+            name: name.clone(),
+            name_cstring: CString::new(name.clone())?,
+            kind: kind,
+            input: ShaderInput { input: input },
+            output: ShaderOutput { output: output },
+            layout: ShaderLayout {
+                num_sets: num_sets,
+                bindings: bindings,
+                descriptors: descriptors,
+                num_push_constants_ranges: num_push_constants_ranges,
+                push_constants_range: push_constants_range,
+            },
+        })
     }
 }

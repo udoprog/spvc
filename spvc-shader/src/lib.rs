@@ -29,7 +29,7 @@ pub use self::access::AccessTrait;
 pub use self::function::FunctionBuilder;
 pub use self::global_var::GlobalVar;
 pub use self::ops::*;
-pub use self::shader::Shader;
+pub use self::shader::{Shader, ShaderKind};
 pub use self::storage_class::StorageClass;
 pub use self::struct_member::StructMember;
 pub use self::types::{Bool, Float, Matrix, Struct, Vector, mat3, mat4, st, vec2, vec3, vec4};

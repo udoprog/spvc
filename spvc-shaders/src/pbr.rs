@@ -66,7 +66,8 @@ pub fn vertex_shader() -> Result<Shader> {
         main.op(store(v_tex_coord.clone(), load(tex_coord.clone())));
         main.op(store(v_normal.clone(), load(normal.clone())));
 
-        shader.vertex_entry_point(
+        shader.entry_point(
+            ShaderKind::Vertex,
             main.returns_void(),
             vec![
                 position.clone(),
