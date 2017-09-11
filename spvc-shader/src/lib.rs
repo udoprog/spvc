@@ -10,6 +10,7 @@ extern crate error_chain;
 mod access;
 mod function;
 mod global_var;
+mod built_in_var;
 mod ops;
 mod pointer;
 mod types;
@@ -25,6 +26,7 @@ pub mod errors;
 pub mod struct_member;
 
 pub use self::access::AccessTrait;
+pub use self::built_in_var::BuiltInVar;
 pub use self::function::FunctionBuilder;
 pub use self::global_var::GlobalVar;
 // FIXME: Too many to list explicitly.

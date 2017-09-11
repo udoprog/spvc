@@ -5,7 +5,7 @@ use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
-use super::spirv::{BuiltIn, Decoration, StorageClass, Word};
+use super::spirv::{Decoration, StorageClass, Word};
 use super::spirv_type::SpirvType;
 use super::type_key::TypeKey;
 use std::rc::Rc;
@@ -18,16 +18,11 @@ pub struct GlobalVar {
     pub set: Option<u32>,
     pub binding: Option<u32>,
     pub location: Option<u32>,
-    pub built_in: Option<BuiltIn>,
 }
 
 impl Op for GlobalVar {
     fn as_interface(&self) -> Option<Interface> {
         use self::StorageClass::*;
-
-        if let Some(_) = self.built_in {
-            return Some(Interface::BuiltIn);
-        }
 
         match self.storage_class {
             Input => {
@@ -114,14 +109,6 @@ impl Op for GlobalVar {
                     );
                 }
 
-                if let Some(built_in) = self.built_in {
-                    s.builder.decorate(
-                        variable_id,
-                        Decoration::BuiltIn,
-                        &[Operand::BuiltIn(built_in)],
-                    );
-                }
-
                 Ok(variable_id)
             },
         )?;
@@ -143,7 +130,6 @@ impl GlobalVar {
             set: None,
             binding: None,
             location: None,
-            built_in: None,
         }
     }
 
@@ -155,7 +141,6 @@ impl GlobalVar {
             set: Some(set),
             binding: self.binding,
             location: self.location,
-            built_in: self.built_in,
         }
     }
 
@@ -167,7 +152,6 @@ impl GlobalVar {
             set: self.set,
             binding: Some(binding),
             location: self.location,
-            built_in: self.built_in,
         }
     }
 
@@ -179,19 +163,6 @@ impl GlobalVar {
             set: self.set,
             binding: self.binding,
             location: Some(location),
-            built_in: self.built_in,
-        }
-    }
-
-    pub fn with_built_in(self, built_in: BuiltIn) -> GlobalVar {
-        GlobalVar {
-            name: self.name,
-            storage_class: self.storage_class,
-            ty: self.ty,
-            set: self.set,
-            binding: self.binding,
-            location: self.location,
-            built_in: Some(built_in),
         }
     }
 

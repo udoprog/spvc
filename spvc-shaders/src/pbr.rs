@@ -45,9 +45,12 @@ pub fn vertex_shader() -> Result<Shader> {
         .with_location(1)
         .build();
 
-    let gl_position = GlobalVar::new("gl_Position", vec4(), StorageClass::Output)
-        .with_built_in(BuiltIn::Position)
-        .build();
+    let gl_position = BuiltInVar::new(
+        "gl_Position",
+        vec4(),
+        StorageClass::Output,
+        BuiltIn::Position,
+    );
 
     {
         let mut main = FunctionBuilder::new("main");

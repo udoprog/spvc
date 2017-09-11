@@ -118,3 +118,32 @@ impl SpirvType for NoType {
         other.as_no_type().is_some()
     }
 }
+
+pub trait WrapperType {
+    fn wrapped_type(&self) -> &SpirvType;
+}
+
+impl<T> SpirvType for T
+where
+    T: fmt::Debug + WrapperType,
+{
+    fn register_type(&self, shader: &mut Shader) -> Result<Word> {
+        self.wrapped_type().register_type(shader)
+    }
+
+    fn as_pointer(&self) -> Option<Pointer> {
+        self.wrapped_type().as_pointer()
+    }
+
+    fn width(&self) -> u32 {
+        self.wrapped_type().width()
+    }
+
+    fn matches(&self, other: &SpirvType) -> bool {
+        return self.wrapped_type().matches(other);
+    }
+
+    fn display(&self) -> String {
+        self.wrapped_type().display()
+    }
+}

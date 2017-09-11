@@ -1,4 +1,4 @@
-use super::spirv::{StorageClass, Word};
+use super::spirv::{BuiltIn, StorageClass, Word};
 
 /// Description of a SPIR-V type, used as a lookup key to avoid duplicate declarations.
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -26,6 +26,11 @@ pub enum TypeKey {
     Function {
         return_type: Word,
         parameter_types: Vec<Word>,
+    },
+    BuiltInVar {
+        storage_class: StorageClass,
+        variable_type: Word,
+        built_in: BuiltIn,
     },
     GlobalVar {
         storage_class: StorageClass,
