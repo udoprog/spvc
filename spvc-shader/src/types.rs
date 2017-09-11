@@ -255,14 +255,14 @@ impl SpirvType for Matrix {
             id,
             index,
             Decoration::ColMajor,
-            vec![],
+            &[],
         );
 
         shader.builder.member_decorate(
             id,
             index,
             Decoration::MatrixStride,
-            vec![Operand::LiteralInt32(self.column_type.width())],
+            &[Operand::LiteralInt32(self.column_type.width())],
         );
 
         Ok(())
@@ -316,7 +316,7 @@ impl SpirvType for Struct {
                 field_types: field_types.clone(),
             },
             |s| {
-                let id = s.builder.type_struct(field_types.clone());
+                let id = s.builder.type_struct(&field_types);
 
                 s.name(id, self.name);
 
@@ -331,14 +331,14 @@ impl SpirvType for Struct {
                         id,
                         index,
                         Decoration::Offset,
-                        vec![Operand::LiteralInt32(offset)],
+                        &[Operand::LiteralInt32(offset)],
                     );
 
                     offset += m.ty.width();
                     m.ty.register_struct_extra(id, index, s)?;
                 }
 
-                s.builder.decorate(id, Decoration::Block, vec![]);
+                s.builder.decorate(id, Decoration::Block, &[]);
                 Ok(id)
             },
         )

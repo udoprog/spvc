@@ -4,8 +4,7 @@ version = "0.1.0"
 authors = ["John-John Tedro <udoprog@tedro.se>"]
 
 [dependencies]
-rspirv = "0.4"
 glsl-struct-derive = { path = "../glsl-struct-derive", version = "0.1" }
 spvc-shader = { path = "../spvc-shader", version = "0.1" }
-spirv_headers = "1.1"
 vulkano = "0.6"
+rspirv = {version = "0.4", git = "https://github.com/google/rspirv.git"}

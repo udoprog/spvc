@@ -90,7 +90,7 @@ impl RegOp for VecExpand {
                 self.component_type,
                 None,
                 composite,
-                vec![i],
+                &[i],
             )?;
 
             constituents.push(id);
@@ -102,7 +102,7 @@ impl RegOp for VecExpand {
         let id = shader.builder.composite_construct(
             self.result_type,
             None,
-            constituents,
+            &constituents,
         )?;
 
         Ok(Some(id))

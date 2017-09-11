@@ -1,5 +1,4 @@
-use super::spirv::Word;
-use super::storage_class::StorageClass;
+use super::spirv::{StorageClass, Word};
 
 /// Description of a SPIR-V type, used as a lookup key to avoid duplicate declarations.
 #[derive(PartialEq, Eq, Hash, Debug)]

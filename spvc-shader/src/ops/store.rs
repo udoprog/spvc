@@ -63,7 +63,7 @@ impl RegOp for RegisteredStore {
         let pointer = self.dest.op_id(shader)?.ok_or(ErrorKind::NoOp)?;
         let source = self.source.op_id(shader)?.ok_or(ErrorKind::NoObjectId)?;
 
-        shader.builder.store(pointer, source, None, vec![])?;
+        shader.builder.store(pointer, source, None, &[])?;
         Ok(None)
     }
 }

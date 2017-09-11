@@ -2,9 +2,8 @@ use super::errors::*;
 use super::function::Function;
 use super::op::Op;
 use super::rspirv;
-use super::spirv::{ExecutionModel, Word};
+use super::spirv::{ExecutionModel, StorageClass, Word};
 use super::spirv_type::SpirvType;
-use super::storage_class::StorageClass;
 use super::type_key::TypeKey;
 use super::types::{Float, UnsignedInteger};
 use std::collections::HashMap;
@@ -152,7 +151,7 @@ impl Shader {
             kind.as_execution_model(),
             id,
             name.clone(),
-            interface_words,
+            &interface_words,
         );
 
         #[cfg(feature = "vulkan")]

@@ -58,7 +58,7 @@ impl RegOp for RegisteredLoad {
             None,
             pointer,
             None,
-            vec![],
+            &[],
         )?;
 
         Ok(Some(id))

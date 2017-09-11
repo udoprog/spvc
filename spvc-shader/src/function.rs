@@ -42,10 +42,7 @@ impl Function {
         };
 
         let fn_type = shader.cached_type(fn_key, |s| {
-            Ok(s.builder.type_function(
-                return_type,
-                parameter_types.clone(),
-            ))
+            Ok(s.builder.type_function(return_type, &parameter_types))
         })?;
 
         let id = shader.builder.begin_function(

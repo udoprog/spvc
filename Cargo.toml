@@ -4,5 +4,5 @@ version = "0.1.0"
 authors = ["John-John Tedro <udoprog@tedro.se>"]
 
 [dependencies]
-rspirv = "0.4"
 spvc-shaders = { path = "./spvc-shaders", version = "0.1" }
+rspirv = {version = "0.4", git = "https://github.com/google/rspirv.git"}

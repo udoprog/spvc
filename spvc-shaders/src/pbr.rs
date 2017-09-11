@@ -1,4 +1,3 @@
-use spirv::BuiltIn;
 use spvc_shader;
 use spvc_shader::*;
 use spvc_shader::errors::*;

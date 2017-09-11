@@ -5,9 +5,8 @@ use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
-use super::spirv::{BuiltIn, Decoration, Word};
+use super::spirv::{BuiltIn, Decoration, StorageClass, Word};
 use super::spirv_type::SpirvType;
-use super::storage_class::StorageClass;
 use super::type_key::TypeKey;
 use std::rc::Rc;
 
@@ -95,7 +94,7 @@ impl Op for GlobalVar {
                     s.builder.decorate(
                         variable_id,
                         Decoration::DescriptorSet,
-                        vec![Operand::LiteralInt32(set)],
+                        &[Operand::LiteralInt32(set)],
                     );
                 }
 
@@ -103,7 +102,7 @@ impl Op for GlobalVar {
                     s.builder.decorate(
                         variable_id,
                         Decoration::Binding,
-                        vec![Operand::LiteralInt32(binding)],
+                        &[Operand::LiteralInt32(binding)],
                     );
                 }
 
@@ -111,7 +110,7 @@ impl Op for GlobalVar {
                     s.builder.decorate(
                         variable_id,
                         Decoration::Location,
-                        vec![Operand::LiteralInt32(location)],
+                        &[Operand::LiteralInt32(location)],
                     );
                 }
 
@@ -119,7 +118,7 @@ impl Op for GlobalVar {
                     s.builder.decorate(
                         variable_id,
                         Decoration::BuiltIn,
-                        vec![Operand::BuiltIn(built_in)],
+                        &[Operand::BuiltIn(built_in)],
                     );
                 }
 

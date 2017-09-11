@@ -4,9 +4,8 @@ use super::ops::BadOp;
 use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::shader::Shader;
-use super::spirv::Word;
+use super::spirv::{StorageClass, Word};
 use super::spirv_type::SpirvType;
-use super::storage_class::StorageClass;
 use super::struct_member::StructMember;
 use std::rc::Rc;
 
@@ -72,7 +71,7 @@ impl RegOp for RegisteredAccess {
             self.pointer_type,
             None,
             base,
-            self.access_chain.clone(),
+            &self.access_chain,
         )?;
 
         Ok(Some(id))

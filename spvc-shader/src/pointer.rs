@@ -1,8 +1,7 @@
 use super::errors::*;
 use super::shader::Shader;
-use super::spirv::Word;
+use super::spirv::{StorageClass, Word};
 use super::spirv_type::SpirvType;
-use super::storage_class::StorageClass;
 use std::rc::Rc;
 
 #[derive(Debug, Clone)]

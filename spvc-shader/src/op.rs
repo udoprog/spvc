@@ -3,8 +3,8 @@ use super::interface::Interface;
 use super::ops::BadOp;
 use super::reg_op::RegOp;
 use super::shader::Shader;
+use super::spirv::StorageClass;
 use super::spirv_type::SpirvType;
-use super::storage_class::StorageClass;
 use std::fmt;
 use std::rc::Rc;
 
