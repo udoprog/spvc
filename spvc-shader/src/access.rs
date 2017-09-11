@@ -9,7 +9,10 @@ use super::spirv_type::SpirvType;
 use super::struct_member::StructMember;
 use std::rc::Rc;
 
+/// Trait for accessing members on operations.
+/// This is typically done with structs.
 pub trait AccessTrait {
+    /// Access the given struct member.
     fn access_member(&self, member: StructMember) -> Rc<Op>;
 }
 

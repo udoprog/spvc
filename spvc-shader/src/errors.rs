@@ -1,3 +1,5 @@
+//! Errors for SPVC
+
 use rspirv;
 
 error_chain! {

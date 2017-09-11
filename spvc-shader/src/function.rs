@@ -10,7 +10,7 @@ use std::rc::Rc;
 pub struct Function {
     pub name: String,
     ops: Vec<Rc<Op>>,
-    returns: Option<Rc<SpirvType>>,
+    return_op: Option<Rc<Op>>,
 }
 
 impl Function {
@@ -27,12 +27,14 @@ impl Function {
             out
         };
 
-        let return_type = self.returns
-            .as_ref()
-            .map(|r| r.register_type(shader))
-            .unwrap_or_else(|| {
-                shader.cached_type(TypeKey::Void, |s| Ok(s.builder.type_void()))
-            })?;
+        let return_type = if let Some(return_op) = self.return_op {
+            return_op.op_type().register_type(shader)?
+        } else {
+            shader.cached_type(
+                TypeKey::Void,
+                |s| Ok(s.builder.type_void()),
+            )?
+        };
 
         let parameter_types: Vec<Word> = vec![];
 
@@ -58,12 +60,22 @@ impl Function {
             s.op_id(shader)?;
         }
 
-        shader.builder.ret()?;
+        if let Some(return_op) = self.return_op {
+            let return_op = return_op.register_op(shader)?.op_id(shader)?.ok_or(
+                ErrorKind::NoOp,
+            )?;
+
+            shader.builder.ret_value(return_op)?;
+        } else {
+            shader.builder.ret()?;
+        }
+
         shader.builder.end_function()?;
         Ok(id)
     }
 }
 
+/// Builder of functions.
 #[derive(Debug)]
 pub struct FunctionBuilder {
     name: String,
@@ -71,6 +83,7 @@ pub struct FunctionBuilder {
 }
 
 impl FunctionBuilder {
+    /// Create a new function builder.
     pub fn new(name: &str) -> FunctionBuilder {
         FunctionBuilder {
             name: String::from(name),
@@ -78,23 +91,28 @@ impl FunctionBuilder {
         }
     }
 
+    /// Add an operation to this function builder.
     pub fn op(&mut self, op: Rc<Op>) {
         self.ops.push(op);
     }
 
+    /// Create a function that returns void
+    ///
+    /// All previously appended operations will be added to the created function.
     pub fn returns_void(self) -> Function {
         Function {
             name: self.name,
             ops: self.ops,
-            returns: None,
+            return_op: None,
         }
     }
 
-    pub fn returns<T: 'static + SpirvType>(self, ty: T) -> Function {
+    /// Create a function that returns the value of the given operation.
+    pub fn returns(self, return_op: Rc<Op>) -> Function {
         Function {
             name: self.name,
             ops: self.ops,
-            returns: Some(Rc::new(ty)),
+            return_op: Some(return_op),
         }
     }
 }
