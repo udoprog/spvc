@@ -11,11 +11,11 @@ pub struct BadOp {
     op_type: NoType,
     op_name: &'static str,
     reason: &'static str,
-    causes: Vec<Rc<Box<Op>>>,
+    causes: Vec<Rc<Op>>,
 }
 
 impl BadOp {
-    pub fn new(op_name: &'static str, reason: &'static str, causes: Vec<Rc<Box<Op>>>) -> BadOp {
+    pub fn new(op_name: &'static str, reason: &'static str, causes: Vec<Rc<Op>>) -> BadOp {
         BadOp {
             op_type: NoType,
             op_name: op_name,

@@ -13,28 +13,24 @@ macro_rules! expand_vec {
     #[derive(Debug)]
     pub struct $st {
         result_type: Vector,
-        source: Rc<Box<Op>>,
+        source: Rc<Op>,
         $($const: f32,)*
     }
 
-    pub fn $fn(source: Rc<Box<Op>>, $($const: f32,)*) -> Rc<Box<Op>> {
+    pub fn $fn(source: Rc<Op>, $($const: f32,)*) -> Rc<Op> {
         if let Some(vector) = source.op_type().as_vector() {
             if vector.component_count == $orig_size {
                 let result_type = Vector::new(Float, $dest_size);
 
-                return Rc::new(Box::new($st {
+                return Rc::new($st {
                     result_type: result_type,
                     source: source,
                     $($const: $const,)*
-                }));
+                });
             }
         }
 
-        Rc::new(Box::new(BadOp::new(
-            stringify!($fn),
-            "argument type mismatch",
-            vec![source],
-        )))
+        Rc::new(BadOp::new(stringify!($fn), "argument type mismatch", vec![source]))
     }
 
     impl Op for $st {

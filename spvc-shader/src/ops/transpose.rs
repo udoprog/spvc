@@ -11,26 +11,26 @@ use types::Matrix;
 #[derive(Debug)]
 pub struct Transpose {
     op_type: Matrix,
-    matrix: Rc<Box<Op>>,
+    matrix: Rc<Op>,
 }
 
 /// Reflects a transpose operation.
-pub fn transpose(matrix: Rc<Box<Op>>) -> Rc<Box<Op>> {
+pub fn transpose(matrix: Rc<Op>) -> Rc<Op> {
     // Expect a matrix as argument type.
     if let Some(dims) = matrix.op_type().as_matrix_dims() {
         let op_type = dims.transpose_type();
 
-        return Rc::new(Box::new(Transpose {
+        return Rc::new(Transpose {
             op_type: op_type,
             matrix: matrix,
-        }));
+        });
     }
 
-    Rc::new(Box::new(BadOp::new(
+    Rc::new(BadOp::new(
         "transpose",
         "expected transposable matrix",
         vec![matrix],
-    )))
+    ))
 }
 
 impl Op for Transpose {
@@ -44,7 +44,7 @@ impl Op for Transpose {
 
         Ok(Box::new(RegTranspose {
             result_type: result_type,
-            matrix: Rc::new(matrix),
+            matrix: matrix,
         }))
     }
 }
@@ -52,7 +52,7 @@ impl Op for Transpose {
 #[derive(Debug)]
 pub struct RegTranspose {
     result_type: Word,
-    matrix: Rc<Box<RegOp>>,
+    matrix: Box<RegOp>,
 }
 
 impl RegOp for RegTranspose {

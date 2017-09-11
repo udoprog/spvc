@@ -9,8 +9,8 @@ use std::rc::Rc;
 #[derive(Debug)]
 pub struct Function {
     pub name: String,
-    ops: Vec<Rc<Box<Op>>>,
-    returns: Option<Box<SpirvType>>,
+    ops: Vec<Rc<Op>>,
+    returns: Option<Rc<SpirvType>>,
 }
 
 impl Function {
@@ -70,7 +70,7 @@ impl Function {
 #[derive(Debug)]
 pub struct FunctionBuilder {
     name: String,
-    ops: Vec<Rc<Box<Op>>>,
+    ops: Vec<Rc<Op>>,
 }
 
 impl FunctionBuilder {
@@ -81,7 +81,7 @@ impl FunctionBuilder {
         }
     }
 
-    pub fn op(&mut self, op: Rc<Box<Op>>) {
+    pub fn op(&mut self, op: Rc<Op>) {
         self.ops.push(op);
     }
 
@@ -97,7 +97,7 @@ impl FunctionBuilder {
         Function {
             name: self.name,
             ops: self.ops,
-            returns: Some(Box::new(ty)),
+            returns: Some(Rc::new(ty)),
         }
     }
 }

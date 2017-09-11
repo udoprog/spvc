@@ -13,25 +13,23 @@ pub struct Load {
     /// Pointe type of the object being loaded.
     pub pointer: Pointer,
     /// Object being loaded.
-    pub object: Rc<Box<Op>>,
+    pub object: Rc<Op>,
 }
 
-pub fn load(object: Rc<Box<Op>>) -> Rc<Box<Op>> {
+pub fn load(object: Rc<Op>) -> Rc<Op> {
     if let Some(pointer) = object.op_type().as_pointer() {
-        return Rc::new(Box::new(Load {
+        return Rc::new(Load {
             pointer: pointer,
             object: object,
-        }));
+        });
     }
 
-    Rc::new(Box::new(
-        BadOp::new("load", "expected pointer", vec![object]),
-    ))
+    Rc::new(BadOp::new("load", "expected pointer", vec![object]))
 }
 
 impl Op for Load {
     fn op_type(&self) -> &SpirvType {
-        self.pointer.pointee_type.as_ref().as_ref()
+        self.pointer.pointee_type.as_ref()
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
@@ -40,7 +38,7 @@ impl Op for Load {
 
         Ok(Box::new(RegisteredLoad {
             result_type: result_type,
-            object: Rc::new(object),
+            object: object,
         }))
     }
 }
@@ -48,7 +46,7 @@ impl Op for Load {
 #[derive(Debug)]
 pub struct RegisteredLoad {
     result_type: Word,
-    object: Rc<Box<RegOp>>,
+    object: Box<RegOp>,
 }
 
 impl RegOp for RegisteredLoad {

@@ -8,11 +8,11 @@ use std::rc::Rc;
 #[derive(Debug, Clone)]
 pub struct Pointer {
     storage_class: StorageClass,
-    pub pointee_type: Rc<Box<SpirvType>>,
+    pub pointee_type: Rc<SpirvType>,
 }
 
 impl Pointer {
-    pub fn new(storage_class: StorageClass, pointee_type: Rc<Box<SpirvType>>) -> Pointer {
+    pub fn new(storage_class: StorageClass, pointee_type: Rc<SpirvType>) -> Pointer {
         Pointer {
             storage_class: storage_class,
             pointee_type: pointee_type,
@@ -42,9 +42,7 @@ impl SpirvType for Pointer {
 
     fn matches(&self, other: &SpirvType) -> bool {
         if let Some(pointer) = other.as_pointer() {
-            return self.pointee_type.matches(
-                pointer.pointee_type.as_ref().as_ref(),
-            );
+            return self.pointee_type.matches(pointer.pointee_type.as_ref());
         }
 
         false

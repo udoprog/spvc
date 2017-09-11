@@ -1,9 +1,10 @@
 use super::spirv_type::SpirvType;
+use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct StructMember {
     pub name: &'static str,
-    pub ty: Box<SpirvType>,
+    pub ty: Rc<SpirvType>,
     pub index: u32,
 }
 

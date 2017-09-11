@@ -8,26 +8,24 @@ use spirv_type::SpirvType;
 use std::rc::Rc;
 use types::{Matrix, Vector};
 
-pub fn mul(lhs: Rc<Box<Op>>, rhs: Rc<Box<Op>>) -> Rc<Box<Op>> {
+pub fn mul(lhs: Rc<Op>, rhs: Rc<Op>) -> Rc<Op> {
     if let Some(op_type) = lhs.op_type().matrix_times_matrix(rhs.op_type()) {
-        return Rc::new(Box::new(MatrixTimesMatrixMul {
+        return Rc::new(MatrixTimesMatrixMul {
             op_type: op_type,
             lhs: lhs,
             rhs: rhs,
-        }));
+        });
     }
 
     if let Some(op_type) = lhs.op_type().matrix_times_vector(rhs.op_type()) {
-        return Rc::new(Box::new(MatrixTimesVectorMul {
+        return Rc::new(MatrixTimesVectorMul {
             op_type: op_type,
             lhs: lhs,
             rhs: rhs,
-        }));
+        });
     }
 
-    Rc::new(Box::new(
-        BadOp::new("mul", "argument type mismatch", vec![lhs, rhs]),
-    ))
+    Rc::new(BadOp::new("mul", "argument type mismatch", vec![lhs, rhs]))
 }
 
 #[derive(Debug)]
@@ -56,8 +54,8 @@ impl RegOp for MatrixTimesMatrixRegMul {
 #[derive(Debug)]
 pub struct MatrixTimesMatrixMul {
     op_type: Matrix,
-    lhs: Rc<Box<Op>>,
-    rhs: Rc<Box<Op>>,
+    lhs: Rc<Op>,
+    rhs: Rc<Op>,
 }
 
 impl Op for MatrixTimesMatrixMul {
@@ -105,8 +103,8 @@ impl RegOp for MatrixTimesVectorRegMul {
 #[derive(Debug)]
 pub struct MatrixTimesVectorMul {
     op_type: Vector,
-    lhs: Rc<Box<Op>>,
-    rhs: Rc<Box<Op>>,
+    lhs: Rc<Op>,
+    rhs: Rc<Op>,
 }
 
 impl Op for MatrixTimesVectorMul {

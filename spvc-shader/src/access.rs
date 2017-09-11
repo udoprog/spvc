@@ -11,11 +11,11 @@ use super::struct_member::StructMember;
 use std::rc::Rc;
 
 pub trait AccessTrait {
-    fn access_member(&self, member: StructMember) -> Rc<Box<Op>>;
+    fn access_member(&self, member: StructMember) -> Rc<Op>;
 }
 
-impl AccessTrait for Rc<Box<Op>> {
-    fn access_member(&self, member: StructMember) -> Rc<Box<Op>> {
+impl AccessTrait for Rc<Op> {
+    fn access_member(&self, member: StructMember) -> Rc<Op> {
         let base = self.base().map(Clone::clone).unwrap_or_else(
             || self.clone(),
         );
@@ -27,38 +27,38 @@ impl AccessTrait for Rc<Box<Op>> {
 
             access_chain.push(member.index);
 
-            let member_type = Rc::new(member.ty);
+            let member_type = member.ty.clone();
 
-            return Rc::new(Box::new(Access {
+            return Rc::new(Access {
                 base: base,
                 storage_class: storage_class,
                 pointer_type: Pointer::new(storage_class, member_type.clone()),
                 accessed_type: member_type.clone(),
                 access_chain: access_chain,
-            }));
+            });
         }
 
-        Rc::new(Box::new(BadOp::new(
+        Rc::new(BadOp::new(
             "access_member",
             "expected pointer type",
             vec![self.clone()],
-        )))
+        ))
     }
 }
 
 /// Accessing fields on structs.
 #[derive(Debug)]
 pub struct Access {
-    pub base: Rc<Box<Op>>,
+    pub base: Rc<Op>,
     pub storage_class: StorageClass,
     pub pointer_type: Pointer,
-    pub accessed_type: Rc<Box<SpirvType>>,
+    pub accessed_type: Rc<SpirvType>,
     pub access_chain: Vec<u32>,
 }
 
 #[derive(Debug)]
 pub struct RegisteredAccess {
-    pub base: Rc<Box<RegOp>>,
+    pub base: Box<RegOp>,
     pub result_type: Word,
     pub pointer_type: Word,
     pub access_chain: Vec<Word>,
@@ -80,7 +80,7 @@ impl RegOp for RegisteredAccess {
 }
 
 impl Op for Access {
-    fn base(&self) -> Option<&Rc<Box<Op>>> {
+    fn base(&self) -> Option<&Rc<Op>> {
         Some(&self.base)
     }
 
@@ -113,7 +113,7 @@ impl Op for Access {
         let pointer_type = self.pointer_type.register_type(shader)?;
 
         Ok(Box::new(RegisteredAccess {
-            base: Rc::new(base),
+            base: base,
             result_type: result_type,
             pointer_type: pointer_type,
             access_chain: access_chain,

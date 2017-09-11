@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 pub trait Op: fmt::Debug {
     /// If this is an access operation, returns the base being accessed.
-    fn base(&self) -> Option<&Rc<Box<Op>>> {
+    fn base(&self) -> Option<&Rc<Op>> {
         None
     }
 

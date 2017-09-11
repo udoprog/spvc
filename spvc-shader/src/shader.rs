@@ -133,7 +133,7 @@ impl Shader {
         &mut self,
         kind: ShaderKind,
         function: Function,
-        interface: Vec<Rc<Box<Op>>>,
+        interface: Vec<Rc<Op>>,
     ) -> Result<()> {
         let interface_words = {
             let mut out = Vec::new();
@@ -348,7 +348,7 @@ mod vulkan {
     pub fn interface_from_ops(
         name: String,
         kind: super::ShaderKind,
-        ops: &Vec<Rc<Box<Op>>>,
+        ops: &Vec<Rc<Op>>,
     ) -> Result<ShaderInterface> {
         use self::Interface::*;
 

@@ -136,7 +136,7 @@ impl GlobalVar {
         GlobalVar {
             name: String::from(name),
             storage_class: storage_class,
-            ty: Pointer::new(storage_class, Rc::new(Box::new(ty))),
+            ty: Pointer::new(storage_class, Rc::new(ty)),
             set: None,
             binding: None,
             location: None,
@@ -192,8 +192,8 @@ impl GlobalVar {
         }
     }
 
-    pub fn build(self) -> Rc<Box<Op>> {
-        Rc::new(Box::new(self))
+    pub fn build(self) -> Rc<Op> {
+        Rc::new(self)
     }
 
     #[cfg(feature = "vulkan")]

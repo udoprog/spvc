@@ -10,24 +10,26 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Store {
-    dest: Rc<Box<Op>>,
+    dest: Rc<Op>,
     dest_type: Pointer,
-    source: Rc<Box<Op>>,
+    source: Rc<Op>,
 }
 
-pub fn store(dest: Rc<Box<Op>>, source: Rc<Box<Op>>) -> Rc<Box<Op>> {
+pub fn store(dest: Rc<Op>, source: Rc<Op>) -> Rc<Op> {
     if let Some(dest_type) = dest.op_type().as_pointer() {
         if dest_type.pointee_type.matches(source.op_type()) {
-            return Rc::new(Box::new(Store {
+            return Rc::new(Store {
                 dest: dest,
                 dest_type: dest_type,
                 source: source,
-            }));
+            });
         }
     }
 
-    Rc::new(Box::new(
-        BadOp::new("store", "argument type mismatch", vec![source]),
+    Rc::new(BadOp::new(
+        "store",
+        "argument type mismatch",
+        vec![dest, source],
     ))
 }
 
