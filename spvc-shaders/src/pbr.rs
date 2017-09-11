@@ -21,29 +21,15 @@ pub struct Global {
 pub fn vertex_shader() -> Result<Shader> {
     let mut shader = Shader::new();
 
-    let model = GlobalVar::new("model", Model::type_info(), StorageClass::Uniform).build();
+    let model = UniformVar::new("model", Model::type_info(), 0, 0);
+    let global = UniformVar::new("global", Global::type_info(), 1, 0);
 
-    let global = GlobalVar::new("global", Global::type_info(), StorageClass::Uniform).build();
+    let position = InputVar::new("location", vec3(), 0);
+    let normal = InputVar::new("normal", vec3(), 1);
+    let tex_coord = InputVar::new("tex_coord", vec2(), 2);
 
-    let position = GlobalVar::new("location", vec3(), StorageClass::Input)
-        .with_location(0)
-        .build();
-
-    let normal = GlobalVar::new("normal", vec3(), StorageClass::Input)
-        .with_location(1)
-        .build();
-
-    let tex_coord = GlobalVar::new("tex_coord", vec2(), StorageClass::Input)
-        .with_location(2)
-        .build();
-
-    let v_normal = GlobalVar::new("v_normal", vec3(), StorageClass::Output)
-        .with_location(0)
-        .build();
-
-    let v_tex_coord = GlobalVar::new("v_tex_coord", vec2(), StorageClass::Output)
-        .with_location(1)
-        .build();
+    let v_normal = OutputVar::new("v_normal", vec3(), 0);
+    let v_tex_coord = OutputVar::new("v_tex_coord", vec2(), 1);
 
     let gl_position = BuiltInVar::new(
         "gl_Position",

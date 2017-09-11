@@ -10,6 +10,7 @@ use super::spirv_type::{SpirvType, WrapperType};
 use super::type_key::TypeKey;
 use std::rc::Rc;
 
+/// Represents built-in variables.
 #[derive(Debug)]
 pub struct BuiltInVar {
     pub name: String,

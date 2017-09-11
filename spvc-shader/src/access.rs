@@ -13,7 +13,10 @@ pub trait AccessTrait {
     fn access_member(&self, member: StructMember) -> Rc<Op>;
 }
 
-impl AccessTrait for Rc<Op> {
+impl<T: 'static> AccessTrait for Rc<T>
+where
+    T: Op,
+{
     fn access_member(&self, member: StructMember) -> Rc<Op> {
         let base = self.base().map(Clone::clone).unwrap_or_else(
             || self.clone(),

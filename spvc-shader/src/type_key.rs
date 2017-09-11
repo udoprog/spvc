@@ -27,17 +27,17 @@ pub enum TypeKey {
         return_type: Word,
         parameter_types: Vec<Word>,
     },
+    InputVar { variable_type: Word, location: u32 },
+    OutputVar { variable_type: Word, location: u32 },
     BuiltInVar {
-        storage_class: StorageClass,
         variable_type: Word,
         built_in: BuiltIn,
-    },
-    GlobalVar {
         storage_class: StorageClass,
+    },
+    UniformVar {
         variable_type: Word,
-        set: Option<u32>,
-        binding: Option<u32>,
-        location: Option<u32>,
+        set: u32,
+        binding: u32,
     },
     ConstantU32 { integer_type: Word, value: u32 },
     ConstantF32 { float_type: Word, value: u32 },
