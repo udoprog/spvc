@@ -15,6 +15,11 @@ pub struct Store {
     source: Rc<Op>,
 }
 
+/// Perform a store operation on the given op.
+///
+/// Expects `dest` to be a pointer, and `source` to be an intermediate value.
+///
+/// This operation does not have a return value.
 pub fn store(dest: Rc<Op>, source: Rc<Op>) -> Rc<Op> {
     if let Some(dest_type) = dest.op_type().as_pointer() {
         if dest_type.pointee_type.matches(source.op_type()) {

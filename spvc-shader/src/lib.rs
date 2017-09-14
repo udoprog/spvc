@@ -1,3 +1,4 @@
+//! Utilities for programmatically build shaders for SPIR-V
 #![warn(missing_docs)]
 #![recursion_limit="128"]
 
@@ -24,7 +25,7 @@ mod op;
 mod matrix_dims;
 mod vector_dims;
 mod interface;
-mod type_key;
+mod op_key;
 pub mod errors;
 pub mod struct_member;
 

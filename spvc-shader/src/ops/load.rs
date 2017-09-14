@@ -16,6 +16,10 @@ pub struct Load {
     pub object: Rc<Op>,
 }
 
+/// Perform a load operation on the given op.
+///
+/// Expects `object` to be a pointer.
+/// Results in an intermediate object reflecting the value of the pointee.
 pub fn load(object: Rc<Op>) -> Rc<Op> {
     if let Some(pointer) = object.op_type().as_pointer() {
         return Rc::new(Load {

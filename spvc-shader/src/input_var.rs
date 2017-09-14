@@ -1,28 +1,35 @@
 use super::errors::*;
 use super::interface::Interface;
 use super::op::Op;
+use super::op_key::OpKey;
 use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{Decoration, StorageClass};
 use super::spirv_type::{SpirvType, WrapperType};
-use super::type_key::TypeKey;
 use std::rc::Rc;
 
+/// Reflection of an input variable.
 #[derive(Debug)]
 pub struct InputVar {
+    /// Name of the input variable.
     pub name: String,
-    pub ty: Pointer,
+    /// Type of the input variable, packed into a pointer.
+    pub pointer: Pointer,
+    /// Location of the input variable.
     pub location: u32,
+}
+
+impl WrapperType for InputVar {
+    fn wrapped_type(&self) -> &SpirvType {
+        &self.pointer
+    }
 }
 
 impl Op for InputVar {
     fn as_interface(&self) -> Option<Interface> {
-        Some(Interface::Input {
-            var: self,
-            location: self.location,
-        })
+        Some(Interface::Input(self))
     }
 
     fn storage_class(&self) -> Option<StorageClass> {
@@ -30,14 +37,14 @@ impl Op for InputVar {
     }
 
     fn op_type(&self) -> &SpirvType {
-        &self.ty
+        &self.pointer
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
-        let variable_type = self.ty.register_type(shader)?;
+        let variable_type = self.pointer.register_type(shader)?;
 
-        let id = shader.cached_type(
-            TypeKey::InputVar {
+        let id = shader.cache_op(
+            OpKey::InputVar {
                 variable_type: variable_type,
                 location: self.location,
             },
@@ -66,14 +73,16 @@ impl Op for InputVar {
 }
 
 impl InputVar {
+    /// Create a new input variable.
     pub fn new<T: 'static + SpirvType>(name: &str, ty: T, location: u32) -> Rc<InputVar> {
         Rc::new(InputVar {
             name: String::from(name),
-            ty: Pointer::new(StorageClass::Input, Rc::new(ty)),
+            pointer: Pointer::new(StorageClass::Input, Rc::new(ty)),
             location: location,
         })
     }
 
+    /// Create a descriptor for the input variable.
     #[cfg(feature = "vulkan")]
     pub fn as_vulkan_descriptor(
         &self,
@@ -81,7 +90,6 @@ impl InputVar {
     ) -> Option<::vulkano::descriptor::descriptor::DescriptorDesc> {
         use vulkano::descriptor::descriptor::{DescriptorBufferDesc, DescriptorDesc,
                                               DescriptorDescTy};
-
         Some(DescriptorDesc {
             ty: DescriptorDescTy::Buffer(DescriptorBufferDesc {
                 dynamic: Some(false),
@@ -91,11 +99,5 @@ impl InputVar {
             stages: stages.clone(),
             readonly: true,
         })
-    }
-}
-
-impl WrapperType for InputVar {
-    fn wrapped_type(&self) -> &SpirvType {
-        &self.ty
     }
 }

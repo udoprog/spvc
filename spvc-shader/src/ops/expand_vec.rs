@@ -10,6 +10,7 @@ use types::{Float, Vector};
 
 macro_rules! expand_vec {
     ($st:ident, $fn:ident, $orig_size:expr, $dest_size:expr, $($const:ident),*) => {
+    #[allow(missing_docs)]
     #[derive(Debug)]
     pub struct $st {
         result_type: Vector,
@@ -17,6 +18,7 @@ macro_rules! expand_vec {
         $($const: f32,)*
     }
 
+    #[allow(missing_docs)]
     pub fn $fn(source: Rc<Op>, $($const: f32,)*) -> Rc<Op> {
         if let Some(vector) = source.op_type().as_vector() {
             if vector.component_count == $orig_size {

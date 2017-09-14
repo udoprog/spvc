@@ -1,4 +1,5 @@
-//! Errors for SPVC
+//! Errors for spvc
+#![allow(missing_docs)]
 
 use rspirv;
 

@@ -2,7 +2,7 @@ use super::spirv::{BuiltIn, StorageClass, Word};
 
 /// Description of a SPIR-V type, used as a lookup key to avoid duplicate declarations.
 #[derive(PartialEq, Eq, Hash, Debug)]
-pub enum TypeKey {
+pub enum OpKey {
     Void,
     Bool,
     UnsignedInteger { width: u32 },

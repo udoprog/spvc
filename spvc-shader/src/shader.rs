@@ -1,22 +1,26 @@
 use super::errors::*;
 use super::function::Function;
 use super::op::Op;
+use super::op_key::OpKey;
 use super::rspirv;
 use super::spirv::{ExecutionModel, StorageClass, Word};
 use super::spirv_type::SpirvType;
-use super::type_key::TypeKey;
 use super::types::{Float, UnsignedInteger};
 use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+/// Kind of shader that can be built.
 #[derive(Debug, Clone, Copy)]
 pub enum ShaderKind {
+    /// A vertex shader kind.
     Vertex,
+    /// A fragment shader kind.
     Fragment,
 }
 
 impl ShaderKind {
+    /// Convert the shader to an execution model.
     pub fn as_execution_model(self) -> ExecutionModel {
         use self::ShaderKind::*;
 
@@ -27,11 +31,12 @@ impl ShaderKind {
     }
 }
 
+/// Shader being built.
 pub struct Shader {
     /// Internal builder
     pub(crate) builder: rspirv::mr::Builder,
     /// Cached types, to only initialize each type once.
-    type_cache: HashMap<TypeKey, Word>,
+    op_cache: HashMap<OpKey, Word>,
     #[cfg(feature = "vulkan")]
     vulkan_shader_interfaces: Vec<self::vulkan::ShaderInterface>,
 }
@@ -44,6 +49,7 @@ impl fmt::Debug for Shader {
 
 
 impl Shader {
+    /// Create a new shader builder.
     pub fn new() -> Shader {
         use super::spirv::Capability;
         use super::spirv::AddressingModel;
@@ -57,30 +63,30 @@ impl Shader {
 
         Shader {
             builder: builder,
-            type_cache: HashMap::new(),
+            op_cache: HashMap::new(),
             #[cfg(feature = "vulkan")]
             vulkan_shader_interfaces: Vec::new(),
         }
     }
 
-    pub(crate) fn cached_type<I>(&mut self, ty: TypeKey, inserter: I) -> Result<Word>
+    pub(crate) fn cache_op<I>(&mut self, ty: OpKey, inserter: I) -> Result<Word>
     where
         I: Fn(&mut Self) -> Result<Word>,
     {
-        if let Some(id) = self.type_cache.get(&ty) {
+        if let Some(id) = self.op_cache.get(&ty) {
             return Ok(*id);
         }
 
         let id = inserter(self)?;
-        self.type_cache.insert(ty, id);
+        self.op_cache.insert(ty, id);
         Ok(id)
     }
 
     pub(crate) fn constant_u32(&mut self, value: u32) -> Result<Word> {
         let integer_type = UnsignedInteger.register_type(self)?;
 
-        self.cached_type(
-            TypeKey::ConstantU32 {
+        self.cache_op(
+            OpKey::ConstantU32 {
                 integer_type: integer_type,
                 value: value,
             },
@@ -91,8 +97,8 @@ impl Shader {
     pub(crate) fn constant_f32(&mut self, value: f32) -> Result<Word> {
         let float_type = Float.register_type(self)?;
 
-        self.cached_type(
-            TypeKey::ConstantF32 {
+        self.cache_op(
+            OpKey::ConstantF32 {
                 float_type: float_type,
                 value: value.to_bits(),
             },
@@ -105,8 +111,8 @@ impl Shader {
         storage_class: StorageClass,
         pointee_type: Word,
     ) -> Result<Word> {
-        self.cached_type(
-            TypeKey::Pointer {
+        self.cache_op(
+            OpKey::Pointer {
                 storage_class: storage_class,
                 pointee_type: pointee_type,
             },
@@ -128,6 +134,7 @@ impl Shader {
         self.builder.name(id, name.to_string());
     }
 
+    /// Create a new entry-point to a shader.
     pub fn entry_point(
         &mut self,
         kind: ShaderKind,
@@ -163,6 +170,7 @@ impl Shader {
         Ok(())
     }
 
+    /// Convert the shader being built to a SPIR-V module.
     pub fn module(self) -> rspirv::mr::Module {
         self.builder.module()
     }
@@ -187,6 +195,7 @@ mod vulkan {
 
     // patch implementation of ShaderKind.
     impl super::ShaderKind {
+        /// Convert the shader kind to Vulkan shader stages.
         pub fn to_shader_stages(self) -> ShaderStages {
             use super::ShaderKind::*;
 
@@ -202,6 +211,7 @@ mod vulkan {
             }
         }
 
+        /// Convert the shader kind to Vulkan graphics shader type.
         pub fn to_shader_type(self) -> GraphicsShaderType {
             use super::ShaderKind::*;
 
@@ -214,6 +224,7 @@ mod vulkan {
 
     // patch implementation of Shader.
     impl super::Shader {
+        /// Convert the shader into a VulkanModule.
         pub fn vulkan_shader_module(
             self,
             device: ::std::sync::Arc<::vulkano::device::Device>,
@@ -363,25 +374,25 @@ mod vulkan {
             let interface = op.as_interface().ok_or(ErrorKind::NotInterface)?;
 
             let (dest, location, name, dest_type) = match interface {
-                Input { var, location } => (
+                Input(var) => (
                     &mut input,
-                    location,
+                    var.location,
                     var.name.to_owned(),
-                    &var.ty.pointee_type,
+                    &var.pointer.pointee_type,
                 ),
-                Output { var, location } => (
+                Output(var) => (
                     &mut output,
-                    location,
+                    var.location,
                     var.name.to_owned(),
-                    &var.ty.pointee_type,
+                    &var.pointer.pointee_type,
                 ),
-                Uniform { var, binding, set } => {
+                Uniform(var) => {
                     let descriptor = var.as_vulkan_descriptor(&stages).ok_or(
                         ErrorKind::IllegalInterfaceType,
                     )?;
 
-                    let set = set as usize;
-                    let binding = binding as usize;
+                    let set = var.set as usize;
+                    let binding = var.binding as usize;
 
                     num_sets = cmp::max(set, num_sets);
                     bindings.insert(set, binding);

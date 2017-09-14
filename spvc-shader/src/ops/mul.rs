@@ -8,6 +8,9 @@ use spirv_type::SpirvType;
 use std::rc::Rc;
 use types::{Matrix, Vector};
 
+/// Perform a multiply operation on the two arguments.
+///
+/// This operation might differ depending on the type of the arguments.
 pub fn mul(lhs: Rc<Op>, rhs: Rc<Op>) -> Rc<Op> {
     if let Some(op_type) = lhs.op_type().matrix_times_matrix(rhs.op_type()) {
         return Rc::new(MatrixTimesMatrixMul {

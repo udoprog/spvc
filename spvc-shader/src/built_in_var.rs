@@ -1,21 +1,21 @@
 use super::errors::*;
 use super::interface::Interface;
 use super::op::Op;
+use super::op_key::OpKey;
 use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{BuiltIn, Decoration, StorageClass};
 use super::spirv_type::{SpirvType, WrapperType};
-use super::type_key::TypeKey;
 use std::rc::Rc;
 
 /// Represents built-in variables.
 #[derive(Debug)]
 pub struct BuiltInVar {
-    pub name: String,
+    name: String,
     storage_class: StorageClass,
-    pub ty: Pointer,
+    ty: Pointer,
     built_in: BuiltIn,
 }
 
@@ -41,8 +41,8 @@ impl Op for BuiltInVar {
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
         let variable_type = self.ty.register_type(shader)?;
 
-        let id = shader.cached_type(
-            TypeKey::BuiltInVar {
+        let id = shader.cache_op(
+            OpKey::BuiltInVar {
                 storage_class: self.storage_class,
                 variable_type: variable_type,
                 built_in: self.built_in.clone(),
@@ -72,6 +72,7 @@ impl Op for BuiltInVar {
 }
 
 impl BuiltInVar {
+    /// Create a new built-in variable.
     pub fn new<T: 'static + SpirvType>(
         name: &str,
         ty: T,

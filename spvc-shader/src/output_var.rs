@@ -1,28 +1,35 @@
 use super::errors::*;
 use super::interface::Interface;
 use super::op::Op;
+use super::op_key::OpKey;
 use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{Decoration, StorageClass};
 use super::spirv_type::{SpirvType, WrapperType};
-use super::type_key::TypeKey;
 use std::rc::Rc;
 
+/// Reflection of an output variable.
 #[derive(Debug)]
 pub struct OutputVar {
+    /// Name of the output variable.
     pub name: String,
-    pub ty: Pointer,
+    /// Type of the output variable, packed into a pointer.
+    pub pointer: Pointer,
+    /// Location of the output variable.
     pub location: u32,
+}
+
+impl WrapperType for OutputVar {
+    fn wrapped_type(&self) -> &SpirvType {
+        &self.pointer
+    }
 }
 
 impl Op for OutputVar {
     fn as_interface(&self) -> Option<Interface> {
-        Some(Interface::Output {
-            var: self,
-            location: self.location,
-        })
+        Some(Interface::Output(self))
     }
 
     fn storage_class(&self) -> Option<StorageClass> {
@@ -30,14 +37,14 @@ impl Op for OutputVar {
     }
 
     fn op_type(&self) -> &SpirvType {
-        &self.ty
+        &self.pointer
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
-        let variable_type = self.ty.register_type(shader)?;
+        let variable_type = self.pointer.register_type(shader)?;
 
-        let id = shader.cached_type(
-            TypeKey::OutputVar {
+        let id = shader.cache_op(
+            OpKey::OutputVar {
                 variable_type: variable_type,
                 location: self.location,
             },
@@ -66,14 +73,16 @@ impl Op for OutputVar {
 }
 
 impl OutputVar {
+    /// Create a new output variable.
     pub fn new<T: 'static + SpirvType>(name: &str, ty: T, location: u32) -> Rc<OutputVar> {
         Rc::new(OutputVar {
             name: String::from(name),
-            ty: Pointer::new(StorageClass::Output, Rc::new(ty)),
+            pointer: Pointer::new(StorageClass::Output, Rc::new(ty)),
             location: location,
         })
     }
 
+    /// Create a vulkan descriptor for this output variable.
     #[cfg(feature = "vulkan")]
     pub fn as_vulkan_descriptor(
         &self,
@@ -89,13 +98,7 @@ impl OutputVar {
             }),
             array_count: 1,
             stages: stages.clone(),
-            readonly: true,
+            readonly: false,
         })
-    }
-}
-
-impl WrapperType for OutputVar {
-    fn wrapped_type(&self) -> &SpirvType {
-        &self.ty
     }
 }

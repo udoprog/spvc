@@ -1,36 +1,37 @@
 use super::errors::*;
 use super::interface::Interface;
 use super::op::Op;
+use super::op_key::OpKey;
 use super::pointer::Pointer;
 use super::reg_op::RegOp;
 use super::rspirv::mr::Operand;
 use super::shader::Shader;
 use super::spirv::{Decoration, StorageClass};
 use super::spirv_type::{SpirvType, WrapperType};
-use super::type_key::TypeKey;
 use std::rc::Rc;
 
+/// Reflection of a uniform global variable.
 #[derive(Debug)]
 pub struct UniformVar {
+    /// Name of the variable.
     pub name: String,
-    pub ty: Pointer,
+    /// Type of the variable, packed behind a pointer.
+    pub pointer: Pointer,
+    /// The set of the uniform variable.
     pub set: u32,
+    /// The binding of the uniform variable.
     pub binding: u32,
 }
 
 impl WrapperType for UniformVar {
     fn wrapped_type(&self) -> &SpirvType {
-        &self.ty
+        &self.pointer
     }
 }
 
 impl Op for UniformVar {
     fn as_interface(&self) -> Option<Interface> {
-        Some(Interface::Uniform {
-            var: self,
-            set: self.set,
-            binding: self.binding,
-        })
+        Some(Interface::Uniform(self))
     }
 
     fn storage_class(&self) -> Option<StorageClass> {
@@ -38,14 +39,14 @@ impl Op for UniformVar {
     }
 
     fn op_type(&self) -> &SpirvType {
-        &self.ty
+        &self.pointer
     }
 
     fn register_op(&self, shader: &mut Shader) -> Result<Box<RegOp>> {
-        let variable_type = self.ty.register_type(shader)?;
+        let variable_type = self.pointer.register_type(shader)?;
 
-        let id = shader.cached_type(
-            TypeKey::UniformVar {
+        let id = shader.cache_op(
+            OpKey::UniformVar {
                 variable_type: variable_type,
                 set: self.set,
                 binding: self.binding,
@@ -81,6 +82,7 @@ impl Op for UniformVar {
 }
 
 impl UniformVar {
+    /// Construct a new uniform variable.
     pub fn new<T: 'static + SpirvType>(
         name: &str,
         ty: T,
@@ -89,12 +91,13 @@ impl UniformVar {
     ) -> Rc<UniformVar> {
         Rc::new(UniformVar {
             name: String::from(name),
-            ty: Pointer::new(StorageClass::Uniform, Rc::new(ty)),
+            pointer: Pointer::new(StorageClass::Uniform, Rc::new(ty)),
             set: set,
             binding: binding,
         })
     }
 
+    /// Setup a vulkan descriptor for this uniform variable.
     #[cfg(feature = "vulkan")]
     pub fn as_vulkan_descriptor(
         &self,

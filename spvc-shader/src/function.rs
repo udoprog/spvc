@@ -1,9 +1,8 @@
 use super::errors::*;
 use super::op::Op;
+use super::op_key::OpKey;
 use super::shader::Shader;
 use super::spirv::{self, Word};
-use super::spirv_type::SpirvType;
-use super::type_key::TypeKey;
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -27,25 +26,23 @@ impl Function {
             out
         };
 
-        let return_type = if let Some(return_op) = self.return_op {
+        let return_type = if let Some(ref return_op) = self.return_op {
             return_op.op_type().register_type(shader)?
         } else {
-            shader.cached_type(
-                TypeKey::Void,
-                |s| Ok(s.builder.type_void()),
-            )?
+            shader.cache_op(OpKey::Void, |s| Ok(s.builder.type_void()))?
         };
 
         let parameter_types: Vec<Word> = vec![];
 
-        let fn_key = TypeKey::Function {
-            return_type: return_type,
-            parameter_types: parameter_types.clone(),
-        };
-
-        let fn_type = shader.cached_type(fn_key, |s| {
-            Ok(s.builder.type_function(return_type, &parameter_types))
-        })?;
+        let fn_type = shader.cache_op(
+            OpKey::Function {
+                return_type: return_type,
+                parameter_types: parameter_types.clone(),
+            },
+            |s| {
+                Ok(s.builder.type_function(return_type, &parameter_types))
+            },
+        )?;
 
         let id = shader.builder.begin_function(
             return_type,
@@ -60,7 +57,7 @@ impl Function {
             s.op_id(shader)?;
         }
 
-        if let Some(return_op) = self.return_op {
+        if let Some(ref return_op) = self.return_op {
             let return_op = return_op.register_op(shader)?.op_id(shader)?.ok_or(
                 ErrorKind::NoOp,
             )?;

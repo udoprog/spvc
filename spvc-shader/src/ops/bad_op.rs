@@ -6,6 +6,10 @@ use spirv_type::{NoType, SpirvType};
 use std::collections::LinkedList;
 use std::rc::Rc;
 
+/// Reflects a bad operation.
+///
+/// These can be returned in cases where an operation can be statically determined not to have
+/// a valid value.
 #[derive(Debug)]
 pub struct BadOp {
     op_type: NoType,
@@ -15,6 +19,7 @@ pub struct BadOp {
 }
 
 impl BadOp {
+    /// Create a new bad operation.
     pub fn new(op_name: &'static str, reason: &'static str, causes: Vec<Rc<Op>>) -> BadOp {
         BadOp {
             op_type: NoType,
